@@ -1,0 +1,133 @@
+# ================================
+
+# Dependencies
+
+# ================================
+node_modules/
+**/node_modules/
+
+# ================================
+
+# Environment variables & secrets
+
+# ================================
+.env
+.env.*
+!.env.example
+
+# Firebase / service account credentials
+firebase-service-account*.json
+service-account*.json
+*-service-account*.json
+google-credentials*.json
+
+# ================================
+
+# Build output
+
+# ================================
+dist/
+build/
+.vite/
+**/dist/
+**/build/
+
+# ================================
+
+# Logs
+
+# ================================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ================================
+
+# Coverage / testing
+
+# ================================
+coverage/
+.nyc_output/
+
+# ================================
+
+# Temporary files
+
+# ================================
+*.tmp
+*.temp
+*.cache
+.cache/
+.temp/
+tmp/
+
+# ================================
+
+# Firebase local emulator data
+
+# ================================
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# ================================
+
+# VS Code
+
+# ================================
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# ================================
+
+# OS files
+
+# ================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ================================
+
+# Archives
+
+# ================================
+*.zip
+*.rar
+*.7z
+
+# ================================
+
+# Certificates / private keys
+
+# ================================
+*.pem
+*.key
+*.p12
+*.pfx
+
+# ================================
+
+# TypeScript / tooling caches
+
+# ================================
+*.tsbuildinfo
+.eslintcache
+
+# ================================
+
+# Vercel
+
+# ================================
+.vercel/
+
+# ================================
+
+# Netlify
+
+# ================================
+.netlify/
