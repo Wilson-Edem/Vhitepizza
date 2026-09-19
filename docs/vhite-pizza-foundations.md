@@ -186,7 +186,7 @@ Known v1 tradeoff: kitchen staff can read full order documents, including the cu
 2. Cheese pricing rule (section 3, rule 3): confirm it works like toppings, as the difference from the pizza's default cheese.
 3. Flat delivery fee amount, large-order threshold, opening hours (settings, not blockers).
 4. Payment gateway: **Paystack** (decided). Still to confirm with the client: which methods to enable (card, bank transfer, USSD) and whether pay-on-delivery is offered.
-5. Email service and sender address for urgent alerts.
+5. Email service: Web3Forms.
 6. Restaurant name, logo and address for the brand and receipts.
 
 ---
