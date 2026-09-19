@@ -1,0 +1,375 @@
+{
+  "sizes": [
+    { "id": "small", "label": "Small" },
+    { "id": "medium", "label": "Medium" },
+    { "id": "large", "label": "Large" },
+    { "id": "regular", "label": "Regular" }
+  ],
+  "categories": [
+    {
+      "id": "pizzas",
+      "name": "Pizzas",
+      "order": 1,
+      "description": "Hand-tossed and baked fresh to order with choice toppings."
+    },
+    {
+      "id": "sides",
+      "name": "Sides & Appetizers",
+      "order": 2,
+      "description": "Delicious wings, breads, and side add-ons."
+    },
+    {
+      "id": "desserts",
+      "name": "Desserts",
+      "order": 3,
+      "description": "Sweet treats to finish off your meal."
+    },
+    {
+      "id": "drinks",
+      "name": "Beverages",
+      "order": 4,
+      "description": "Refreshing sodas, juices, and water."
+    }
+  ],
+  "products": [
+    {
+      "id": "chicken-suya-pizza",
+      "name": "Chicken Suya Pizza",
+      "description": "Spicy Nigerian chicken suya, green peppers, red onions, and mozzarella cheese.",
+      "category": "pizzas",
+      "type": "pizza",
+      "image": "chicken-suya.jpg",
+      "available": true,
+      "prices": {
+        "small": 4000,
+        "medium": 6500,
+        "large": 9500
+      },
+      "defaultCheese": "mozzarella",
+      "defaultToppings": [
+        "chicken-suya",
+        "green-pepper",
+        "red-onions"
+      ]
+    },
+    {
+      "id": "bbq-chicken-pizza",
+      "name": "BBQ Chicken Pizza",
+      "description": "Grilled chicken breast, rich sweet BBQ sauce drizzled on top, red onions, and mozzarella.",
+      "category": "pizzas",
+      "type": "pizza",
+      "image": "bbq-chicken.jpg",
+      "available": true,
+      "prices": {
+        "small": 3800,
+        "medium": 6200,
+        "large": 9000
+      },
+      "defaultCheese": "mozzarella",
+      "defaultToppings": [
+        "grilled-chicken",
+        "bbq-sauce",
+        "red-onions"
+      ]
+    },
+    {
+      "id": "pepperoni-supreme",
+      "name": "Pepperoni Supreme",
+      "description": "Double layers of beef pepperoni with extra mozzarella cheese over rich tomato sauce.",
+      "category": "pizzas",
+      "type": "pizza",
+      "image": "pepperoni-supreme.jpg",
+      "available": true,
+      "prices": {
+        "small": 4200,
+        "medium": 6800,
+        "large": 9800
+      },
+      "defaultCheese": "extra-cheese",
+      "defaultToppings": [
+        "beef-pepperoni",
+        "tomato-sauce"
+      ]
+    },
+    {
+      "id": "veggie-overload",
+      "name": "Veggie Overload",
+      "description": "Fresh mushrooms, green peppers, sweet corn, black olives, and diced onions with classic mozzarella.",
+      "category": "pizzas",
+      "type": "pizza",
+      "image": "veggie-overload.jpg",
+      "available": true,
+      "prices": {
+        "small": 3500,
+        "medium": 5800,
+        "large": 8500
+      },
+      "defaultCheese": "mozzarella",
+      "defaultToppings": [
+        "mushrooms",
+        "green-pepper",
+        "sweet-corn",
+        "black-olives",
+        "red-onions"
+      ]
+    },
+    {
+      "id": "naija-fiesta-pizza",
+      "name": "Naija Fiesta",
+      "description": "Minced beef, beef sausage, chicken suya, spicy scotch bonnet peppers, and mozzarella cheese.",
+      "category": "pizzas",
+      "type": "pizza",
+      "image": "naija-fiesta.jpg",
+      "available": true,
+      "prices": {
+        "small": 4500,
+        "medium": 7200,
+        "large": 10500
+      },
+      "defaultCheese": "mozzarella",
+      "defaultToppings": [
+        "minced-beef",
+        "beef-sausage",
+        "chicken-suya",
+        "scotch-bonnet"
+      ]
+    },
+    {
+      "id": "cheesy-breadsticks",
+      "name": "Cheesy Garlic Breadsticks",
+      "description": "Freshly baked breadsticks brushed with garlic butter and melted mozzarella, served with marinara dip.",
+      "category": "sides",
+      "type": "simple",
+      "image": "cheesy-breadsticks.jpg",
+      "available": true,
+      "prices": {
+        "regular": 2500
+      }
+    },
+    {
+      "id": "bbq-chicken-wings-6pcs",
+      "name": "BBQ Chicken Wings (6 pcs)",
+      "description": "Oven-roasted chicken wings tossed in rich BBQ sauce.",
+      "category": "sides",
+      "type": "simple",
+      "image": "bbq-wings.jpg",
+      "available": true,
+      "prices": {
+        "regular": 3800
+      }
+    },
+    {
+      "id": "suya-wings-6pcs",
+      "name": "Spicy Suya Wings (6 pcs)",
+      "description": "Oven-roasted chicken wings coated in dry yaji suya spice and pepper oil.",
+      "category": "sides",
+      "type": "simple",
+      "image": "suya-wings.jpg",
+      "available": true,
+      "prices": {
+        "regular": 4000
+      }
+    },
+    {
+      "id": "seasoned-potato-wedges",
+      "name": "Seasoned Potato Wedges",
+      "description": "Crispy baked potato wedges seasoned with herbs and garlic salt.",
+      "category": "sides",
+      "type": "simple",
+      "image": "potato-wedges.jpg",
+      "available": true,
+      "prices": {
+        "regular": 2000
+      }
+    },
+    {
+      "id": "chocolate-lava-cake",
+      "name": "Molten Choco Lava Cake",
+      "description": "Warm chocolate cake with a rich, melted chocolate center.",
+      "category": "desserts",
+      "type": "simple",
+      "image": "choco-lava-cake.jpg",
+      "available": true,
+      "prices": {
+        "regular": 1800
+      }
+    },
+    {
+      "id": "sweet-cinnamon-sticks",
+      "name": "Cinnamon Sticks with Icing",
+      "description": "Baked dough sprinkled with cinnamon sugar and served with a sweet icing dip.",
+      "category": "desserts",
+      "type": "simple",
+      "image": "cinnamon-sticks.jpg",
+      "available": true,
+      "prices": {
+        "regular": 2200
+      }
+    },
+    {
+      "id": "pepsi-pet-50cl",
+      "name": "Pepsi 50cl Bottle",
+      "description": "Chilled 50cl PET bottle.",
+      "category": "drinks",
+      "type": "simple",
+      "image": "pepsi-50cl.jpg",
+      "available": true,
+      "prices": {
+        "regular": 600
+      }
+    },
+    {
+      "id": "7up-pet-50cl",
+      "name": "7UP 50cl Bottle",
+      "description": "Chilled 50cl PET bottle.",
+      "category": "drinks",
+      "type": "simple",
+      "image": "7up-50cl.jpg",
+      "available": true,
+      "prices": {
+        "regular": 600
+      }
+    },
+    {
+      "id": "aquafina-water-75cl",
+      "name": "Aquafina Mineral Water 75cl",
+      "description": "Pure bottled drinking water.",
+      "category": "drinks",
+      "type": "simple",
+      "image": "aquafina-75cl.jpg",
+      "available": true,
+      "prices": {
+        "regular": 400
+      }
+    }
+  ],
+  "options": {
+    "crusts": [
+      {
+        "id": "classic-hand-tossed",
+        "name": "Classic Hand-Tossed",
+        "extraPrice": 0
+      },
+      {
+        "id": "thin-and-crispy",
+        "name": "Thin & Crispy Crust",
+        "extraPrice": 500
+      },
+      {
+        "id": "cheese-stuffed-crust",
+        "name": "Cheese-Stuffed Crust",
+        "extraPrice": 1500
+      }
+    ],
+    "cheeses": [
+      {
+        "id": "mozzarella",
+        "name": "Standard Mozzarella",
+        "extraPrice": 0
+      },
+      {
+        "id": "extra-cheese",
+        "name": "Extra Mozzarella",
+        "extraPrice": 1000
+      },
+      {
+        "id": "cheddar-blend",
+        "name": "Cheddar Cheese Blend",
+        "extraPrice": 1200
+      }
+    ],
+    "toppings": [
+      {
+        "id": "chicken-suya",
+        "name": "Chicken Suya",
+        "group": "meat",
+        "price": 1200,
+        "image": "chicken-suya-topping.jpg"
+      },
+      {
+        "id": "grilled-chicken",
+        "name": "Grilled Chicken",
+        "group": "meat",
+        "price": 1000,
+        "image": "grilled-chicken-topping.jpg"
+      },
+      {
+        "id": "beef-pepperoni",
+        "name": "Beef Pepperoni",
+        "group": "meat",
+        "price": 1200,
+        "image": "pepperoni-topping.jpg"
+      },
+      {
+        "id": "minced-beef",
+        "name": "Minced Beef",
+        "group": "meat",
+        "price": 1000,
+        "image": "minced-beef-topping.jpg"
+      },
+      {
+        "id": "beef-sausage",
+        "name": "Beef Sausage",
+        "group": "meat",
+        "price": 900,
+        "image": "sausage-topping.jpg"
+      },
+      {
+        "id": "mushrooms",
+        "name": "Sliced Mushrooms",
+        "group": "vegetable",
+        "price": 700,
+        "image": "mushrooms-topping.jpg"
+      },
+      {
+        "id": "green-pepper",
+        "name": "Green Bell Peppers",
+        "group": "vegetable",
+        "price": 500,
+        "image": "green-pepper-topping.jpg"
+      },
+      {
+        "id": "red-onions",
+        "name": "Diced Red Onions",
+        "group": "vegetable",
+        "price": 400,
+        "image": "red-onions-topping.jpg"
+      },
+      {
+        "id": "black-olives",
+        "name": "Black Olives",
+        "group": "vegetable",
+        "price": 600,
+        "image": "black-olives-topping.jpg"
+      },
+      {
+        "id": "sweet-corn",
+        "name": "Sweet Corn",
+        "group": "vegetable",
+        "price": 500,
+        "image": "sweet-corn-topping.jpg"
+      },
+      {
+        "id": "scotch-bonnet",
+        "name": "Fresh Scotch Bonnet (Ata Rodo)",
+        "group": "vegetable",
+        "price": 400,
+        "image": "scotch-bonnet-topping.jpg"
+      },
+      {
+        "id": "bbq-sauce",
+        "name": "Extra BBQ Sauce Drizzle",
+        "group": "sauce",
+        "price": 300,
+        "image": "bbq-sauce-topping.jpg"
+      },
+      {
+        "id": "tomato-sauce",
+        "name": "Extra Tomato Marinara Sauce",
+        "group": "sauce",
+        "price": 300,
+        "image": "marinara-sauce-topping.jpg"
+      }
+    ]
+  }
+}
