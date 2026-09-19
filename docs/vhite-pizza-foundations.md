@@ -17,7 +17,10 @@ Status: planning only. No application code yet. Items marked **PROPOSED** are my
 - **Alerts:** urgent (large) orders trigger an email to the restaurant; everything else uses dashboard sound + badge.
 - **Location:** VhiteMap popup (`/pick` route: map pin, current location and address search, using its own restricted Geoapify key; returns coordinates plus the address it found), Geoapify address search through the Vhite Pizza server, or manual entry (address, phone, landmark, notes).
 - **Theme:** dark or light, chosen in Settings.
-- **Not in v1:** phone-in orders, dashboard charts, promo codes, ratings, live rider tracking.
+- **Images:** menu and topping images live in `web/public/images` in the repo. Firebase Storage needs a paid plan, so it is not used in v1.
+- **Email:** Web3Forms sends urgent-order alerts to the restaurant.
+- **Restaurant location:** set from the admin's phone GPS in Settings, not hard-coded.
+- **Not in v1:** phone-in orders, dashboard charts, promo codes, ratings, live rider tracking, admin image uploads.
 
 ---
 
@@ -89,7 +92,7 @@ name, extraPrice, available, sortOrder.
 name, group (meat | vegetable | sauce), price, image, available, sortOrder.
 
 ### settings/public (readable by everyone)
-storeName, isOpen (manual override), openingHours (per weekday), flatDeliveryFee, cancelGraceMinutes (0 = none), sizes (id, label, inches), maxDeliveryDistanceKm (optional), restaurant location (lat, lng, address), contactPhone, currency (NGN).
+storeName, isOpen (manual override), openingHours (per weekday), flatDeliveryFee, cancelGraceMinutes (0 = none), sizes (id, label, inches), maxDist (delivery limit in km), restaurantLocation (lat, lng, address; set from the admin's phone), contactPhone, currency (NGN).
 
 ### settings/private (admin only)
 largeOrderThresholds (minimum total and/or item count), approvalReminderMinutes, urgentEmailRecipients.
@@ -173,7 +176,7 @@ Customers read their own orders, the menu and their addresses directly from Fire
 - `settings/private`: admin only.
 - `users/{uid}` and addresses: the owner reads and writes their own (never their own role).
 - `orders`: customers read their own only; staff read by role; **no client writes at all**. Every change goes through the Node server (Admin SDK), which enforces the lifecycle.
-- Storage: menu images are public to read; only admins can upload.
+- Storage: not used in v1 (images live in the repo under `web/public/images`).
 - Staff roles are Firebase custom claims set only by the server or the first-admin script.
 
 Known v1 tradeoff: kitchen staff can read full order documents, including the customer's address and phone. Firestore can't hide single fields by role. Acceptable for trusted staff.
@@ -186,7 +189,7 @@ Known v1 tradeoff: kitchen staff can read full order documents, including the cu
 2. Cheese pricing rule (section 3, rule 3): confirm it works like toppings, as the difference from the pizza's default cheese.
 3. Flat delivery fee amount, large-order threshold, opening hours (settings, not blockers).
 4. Payment gateway: **Paystack** (decided). Still to confirm with the client: which methods to enable (card, bank transfer, USSD) and whether pay-on-delivery is offered.
-5. Email service and sender address for urgent alerts.
+5. Email service: Web3Forms.
 6. Restaurant name, logo and address for the brand and receipts.
 
 ---
@@ -198,7 +201,7 @@ Known v1 tradeoff: kitchen staff can read full order documents, including the cu
 2. Add a Web app and keep the config values (they go in the web `.env`).
 3. Enable Authentication providers: Email/Password, Google, Phone.
 4. Create the Firestore database. Pick the closest available region to Lagos; the region cannot be changed later.
-5. Enable Storage. Storage and phone SMS may require the pay-as-you-go plan, so check current requirements and set a billing budget alert.
+5. Storage: skipped in v1 because it needs a paid plan. If you upgrade later, set a billing budget alert (phone sign-in SMS can also cost money).
 6. Generate a service account key for the Node server. Never commit it to Git.
 
 **Geoapify**
@@ -212,7 +215,7 @@ Known v1 tradeoff: kitchen staff can read full order documents, including the cu
 3. The restaurant completes Paystack's business verification later to switch to live keys.
 
 **Email**
-1. Choose a sender for urgent alerts (a personal SMTP account for development, a transactional email provider for launch).
+1. Email service: Web3Forms (access key created). Check its free-plan limits when we build the alerts.
 
 **GitHub**
 1. Create a private `vhite-pizza` repository. VhiteMap stays as its own repository.
