@@ -511,7 +511,7 @@ function DesktopSidebar({ screen, navigate, cartCount }) {
         <span className="brand-icon">🍕</span>
 
         <div>
-          <h1>Vhite Pizza</h1>
+          <h1>Vhitepizza</h1>
           <small>Hot Pizza. Fast Delivery.</small>
         </div>
       </div>
@@ -548,7 +548,7 @@ function TopBar({ search, onSearch, navigate }) {
     <header className="topbar">
       <div className="top-brand">
         <span className="brand-icon">🍕</span>
-        <strong>Vhite Pizza</strong>
+        <strong>Vhitepizza</strong>
       </div>
 
       <label className="search-field top-search">
@@ -792,7 +792,7 @@ function HomeView({
       <section className="content-section">
         <SectionHeading
           title="Recent Orders"
-          subtitle="Your latest Vhite Pizza orders"
+          subtitle="Your latest Vhitepizza orders"
         />
 
         <div className="recent-order">
@@ -826,7 +826,7 @@ function ExploreView({
       <PageHeading
         tag="DISCOVER"
         title="Explore Menu"
-        text="Find something delicious from Vhite Pizza."
+        text="Find something delicious from Vhitepizza."
       />
 
       <MobileSearch search={search} onSearch={onSearch} />
@@ -1092,7 +1092,7 @@ function OrdersView() {
       <PageHeading
         tag="YOUR ORDERS"
         title="Order History"
-        text="Track and view your Vhite Pizza orders."
+        text="Track and view your Vhitepizza orders."
       />
 
       <EmptyState message="Your orders will appear here." />
@@ -1106,14 +1106,14 @@ function ProfileView({ navigate }) {
       <PageHeading
         tag="ACCOUNT"
         title="Profile"
-        text="Manage your Vhite Pizza account."
+        text="Manage your Vhitepizza account."
       />
 
       <div className="profile-card">
         <span className="large-avatar">V</span>
 
         <div>
-          <h3>Vhite Pizza Customer</h3>
+          <h3>Vhitepizza Customer</h3>
           <p>Sign in to save your addresses and orders.</p>
         </div>
       </div>
@@ -1174,12 +1174,12 @@ function SettingsView({ theme, changeTheme, navigate }) {
       <PageHeading
         tag="PREFERENCES"
         title="Settings"
-        text="Customize your Vhite Pizza experience."
+        text="Customize your Vhitepizza experience."
       />
 
       <section className="settings-card">
         <h3>Appearance</h3>
-        <p>Choose how Vhite Pizza looks on your device.</p>
+        <p>Choose how Vhitepizza looks on your device.</p>
 
         <div className="theme-options">
           {THEME_CHOICES.map((choice) => {
