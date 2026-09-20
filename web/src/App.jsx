@@ -35,6 +35,7 @@ const HERO_SOURCES = [
   "/images/hero/pizza-hero.webp",
   "/images/hero/pizza-hero.png",
   "/images/hero/pizza-herod.png",
+  "/images/pizza-herod.png",
 ];
 
 const IMAGE_EXTENSIONS = ["webp", "png", "jpg"];
