@@ -38,7 +38,7 @@ const HERO_SOURCES = [
   "/images/pizza-herod.png",
 ];
 
-const IMAGE_EXTENSIONS = ["webp", "png", "jpeg"];
+const IMAGE_EXTENSIONS = ["webp", "png", "jpeg", "jpg"];
 const CATEGORY_EMOJI = {
   pizzas: "🍕",
   sides: "🍗",

@@ -1,9 +1,21 @@
 {
   "sizes": [
-    { "id": "small", "label": "Small" },
-    { "id": "medium", "label": "Medium" },
-    { "id": "large", "label": "Large" },
-    { "id": "regular", "label": "Regular" }
+    {
+      "id": "small",
+      "label": "Small"
+    },
+    {
+      "id": "medium",
+      "label": "Medium"
+    },
+    {
+      "id": "large",
+      "label": "Large"
+    },
+    {
+      "id": "regular",
+      "label": "Regular"
+    }
   ],
   "categories": [
     {
@@ -38,7 +50,7 @@
       "description": "Spicy Nigerian chicken suya, green peppers, red onions, and mozzarella cheese.",
       "category": "pizzas",
       "type": "pizza",
-      "image": "chicken-suya.jpg",
+      "image": "chicken-suya-pizza",
       "available": true,
       "prices": {
         "small": 4000,
@@ -58,7 +70,7 @@
       "description": "Grilled chicken breast, rich sweet BBQ sauce drizzled on top, red onions, and mozzarella.",
       "category": "pizzas",
       "type": "pizza",
-      "image": "bbq-chicken.jpg",
+      "image": "bbq-chicken-pizza",
       "available": true,
       "prices": {
         "small": 3800,
@@ -78,7 +90,7 @@
       "description": "Double layers of beef pepperoni with extra mozzarella cheese over rich tomato sauce.",
       "category": "pizzas",
       "type": "pizza",
-      "image": "pepperoni-supreme.jpg",
+      "image": "pepperoni-supreme",
       "available": true,
       "prices": {
         "small": 4200,
@@ -97,7 +109,7 @@
       "description": "Fresh mushrooms, green peppers, sweet corn, black olives, and diced onions with classic mozzarella.",
       "category": "pizzas",
       "type": "pizza",
-      "image": "veggie-overload.jpg",
+      "image": "veggie-overload",
       "available": true,
       "prices": {
         "small": 3500,
@@ -119,7 +131,7 @@
       "description": "Minced beef, beef sausage, chicken suya, spicy scotch bonnet peppers, and mozzarella cheese.",
       "category": "pizzas",
       "type": "pizza",
-      "image": "naija-fiesta.jpg",
+      "image": "naija-fiesta",
       "available": true,
       "prices": {
         "small": 4500,
@@ -140,7 +152,7 @@
       "description": "Freshly baked breadsticks brushed with garlic butter and melted mozzarella, served with marinara dip.",
       "category": "sides",
       "type": "simple",
-      "image": "cheesy-breadsticks.jpg",
+      "image": "cheesey-garlic-breadsticks",
       "available": true,
       "prices": {
         "regular": 2500
@@ -152,7 +164,7 @@
       "description": "Oven-roasted chicken wings tossed in rich BBQ sauce.",
       "category": "sides",
       "type": "simple",
-      "image": "bbq-wings.jpg",
+      "image": "bbq-chicken-wings",
       "available": true,
       "prices": {
         "regular": 3800
@@ -164,7 +176,7 @@
       "description": "Oven-roasted chicken wings coated in dry yaji suya spice and pepper oil.",
       "category": "sides",
       "type": "simple",
-      "image": "suya-wings.jpg",
+      "image": "suya-wings",
       "available": true,
       "prices": {
         "regular": 4000
@@ -176,7 +188,7 @@
       "description": "Crispy baked potato wedges seasoned with herbs and garlic salt.",
       "category": "sides",
       "type": "simple",
-      "image": "potato-wedges.jpg",
+      "image": "seasoned-potato-wedges",
       "available": true,
       "prices": {
         "regular": 2000
@@ -188,7 +200,7 @@
       "description": "Warm chocolate cake with a rich, melted chocolate center.",
       "category": "desserts",
       "type": "simple",
-      "image": "choco-lava-cake.jpg",
+      "image": "molten-choco-lava-cake",
       "available": true,
       "prices": {
         "regular": 1800
@@ -200,7 +212,7 @@
       "description": "Baked dough sprinkled with cinnamon sugar and served with a sweet icing dip.",
       "category": "desserts",
       "type": "simple",
-      "image": "cinnamon-sticks.jpg",
+      "image": "cinnamon-sticks",
       "available": true,
       "prices": {
         "regular": 2200
@@ -212,7 +224,7 @@
       "description": "Chilled 50cl PET bottle.",
       "category": "drinks",
       "type": "simple",
-      "image": "pepsi-50cl.jpg",
+      "image": "pepsi",
       "available": true,
       "prices": {
         "regular": 600
@@ -224,7 +236,7 @@
       "description": "Chilled 50cl PET bottle.",
       "category": "drinks",
       "type": "simple",
-      "image": "7up-50cl.jpg",
+      "image": "7up",
       "available": true,
       "prices": {
         "regular": 600
@@ -236,7 +248,7 @@
       "description": "Pure bottled drinking water.",
       "category": "drinks",
       "type": "simple",
-      "image": "aquafina-75cl.jpg",
+      "image": "aquafina",
       "available": true,
       "prices": {
         "regular": 400
