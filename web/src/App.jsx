@@ -6,6 +6,9 @@ import {
   ChevronLeft,
   ChevronRight,
   House,
+  LayoutDashboard,
+  LogIn,
+  LogOut,
   MapPin,
   Minus,
   Monitor,
@@ -21,6 +24,9 @@ import {
   Utensils,
   X,
 } from "lucide-react";
+import { useAuth } from "./features/auth/AuthContext";
+import AuthScreen from "./features/auth/AuthScreen";
+import CustomizeSheet from "./features/customize/CustomizeSheet";
 import "./App.css";
 
 const API_URL = `${
@@ -35,10 +41,12 @@ const HERO_SOURCES = [
   "/images/hero/pizza-hero.webp",
   "/images/hero/pizza-hero.png",
   "/images/hero/pizza-herod.png",
+  "/images/pizza-hero.webp",
+  "/images/pizza-hero.png",
   "/images/pizza-herod.png",
 ];
 
-const IMAGE_EXTENSIONS = ["webp", "png", "jpeg", "jpg"];
+const IMAGE_EXTENSIONS = ["jpeg", "jpg", "webp", "png"];
 const CATEGORY_EMOJI = {
   pizzas: "🍕",
   sides: "🍗",
@@ -53,6 +61,12 @@ const NAV_ITEMS = [
   { id: "orders", label: "Orders", icon: ShoppingBag },
   { id: "profile", label: "Profile", icon: User },
 ];
+
+const STAFF_TITLES = {
+  admin: "Admin Dashboard",
+  kitchen: "Kitchen Queue",
+  rider: "Rider Deliveries",
+};
 
 /* ---------- helpers ---------- */
 
@@ -85,7 +99,7 @@ const prefersDark = () =>
 
 // Menu images live in web/public/images/menu. The menu "image" value is used
 // as the file name; if the extension is missing or the file is not found,
-// .webp, .png and .jpg versions of the same name are tried.
+// .jpeg, .jpg, .webp and .png versions of the same name are tried.
 const getImageSources = (image) => {
   if (!image) return [];
 
@@ -125,11 +139,14 @@ const getIncluded = (product, options) => {
 /* ---------- App ---------- */
 
 function App() {
+  const { user, profile, role, isStaff, logout } = useAuth();
+
   const [menu, setMenu] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const [screen, setScreen] = useState("home");
+  const [authReturn, setAuthReturn] = useState("profile");
   const [activeCategory, setActiveCategory] = useState("all");
   const [search, setSearch] = useState("");
 
@@ -142,6 +159,9 @@ function App() {
 
   const resolvedTheme =
     theme === "system" ? (systemDark ? "dark" : "light") : theme;
+
+  const displayName = profile?.displayName || user?.displayName || "";
+  const initial = (displayName || user?.email || "V").charAt(0).toUpperCase();
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
@@ -257,8 +277,18 @@ function App() {
   const total = subtotal + deliveryFee;
 
   const navigate = (next) => {
+    if (next === "staff" && !isStaff) {
+      setToast("Staff access only.");
+      return;
+    }
+
     setScreen(next);
     window.scrollTo(0, 0);
+  };
+
+  const goToAuth = (back = "profile") => {
+    setAuthReturn(back);
+    navigate("auth");
   };
 
   const handleSearch = (value) => {
@@ -269,35 +299,39 @@ function App() {
 
   const closeProduct = useCallback(() => setSelectedProduct(null), []);
 
+  const addItem = (item) => {
+    setCart((current) =>
+      current.some((entry) => entry.id === item.id)
+        ? current.map((entry) =>
+            entry.id === item.id
+              ? { ...entry, quantity: entry.quantity + item.quantity }
+              : entry
+          )
+        : [...current, item]
+    );
+
+    setSelectedProduct(null);
+    setToast(`${item.name} added to cart`);
+  };
+
+  // Quick add for sides, drinks and desserts.
   const addToCart = (product, size) => {
     const chosen = size || getSizes(product, sizeLabels)[0];
 
     if (!chosen) return;
 
-    const id = `${product.id}:${chosen.id}`;
-
-    setCart((current) =>
-      current.some((item) => item.id === id)
-        ? current.map((item) =>
-            item.id === id ? { ...item, quantity: item.quantity + 1 } : item
-          )
-        : [
-            ...current,
-            {
-              id,
-              productId: product.id,
-              name: product.name,
-              image: product.image,
-              sizeId: chosen.id,
-              sizeLabel: chosen.label,
-              price: chosen.price,
-              quantity: 1,
-            },
-          ]
-    );
-
-    setSelectedProduct(null);
-    setToast(`${product.name} added to cart`);
+    addItem({
+      id: `${product.id}:${chosen.id}`,
+      productId: product.id,
+      name: product.name,
+      image: product.image,
+      category: product.category,
+      sizeId: chosen.id,
+      sizeLabel: chosen.label,
+      price: chosen.price,
+      quantity: 1,
+      details: [],
+    });
   };
 
   const updateQuantity = (id, amount) =>
@@ -316,7 +350,21 @@ function App() {
 
   const clearCart = () => setCart([]);
 
-  const checkout = () => setToast("Checkout is coming in the next step.");
+  const checkout = () => {
+    if (!user) {
+      setToast("Please sign in to check out.");
+      goToAuth("cart");
+      return;
+    }
+
+    setToast("Checkout is coming in the next step.");
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    setToast("Signed out.");
+    navigate("home");
+  };
 
   const cartProps = {
     cart,
@@ -349,10 +397,16 @@ function App() {
         screen={screen}
         navigate={navigate}
         cartCount={cartCount}
+        isStaff={isStaff}
       />
 
       <main className="main-content">
-        <TopBar search={search} onSearch={handleSearch} navigate={navigate} />
+        <TopBar
+          search={search}
+          onSearch={handleSearch}
+          navigate={navigate}
+          initial={initial}
+        />
 
         {needsMenu && loading && (
           <div className="state-box">
@@ -389,7 +443,23 @@ function App() {
 
         {screen === "orders" && <OrdersView />}
 
-        {screen === "profile" && <ProfileView navigate={navigate} />}
+        {screen === "profile" && (
+          <ProfileView
+            user={user}
+            name={displayName}
+            role={role}
+            isStaff={isStaff}
+            navigate={navigate}
+            goToAuth={goToAuth}
+            onLogout={handleLogout}
+          />
+        )}
+
+        {screen === "auth" && (
+          <AuthScreen onDone={() => navigate(authReturn)} />
+        )}
+
+        {screen === "staff" && <StaffView role={role} isStaff={isStaff} />}
 
         {screen === "settings" && (
           <SettingsView
@@ -408,15 +478,25 @@ function App() {
         cartCount={cartCount}
       />
 
-      {selectedProduct && (
-        <ProductModal
-          product={selectedProduct}
-          sizeLabels={sizeLabels}
-          options={options}
-          onClose={closeProduct}
-          onAdd={addToCart}
-        />
-      )}
+      {selectedProduct &&
+        (selectedProduct.type === "pizza" ? (
+          <CustomizeSheet
+            product={selectedProduct}
+            sizes={getSizes(selectedProduct, sizeLabels)}
+            options={options}
+            imageSlot={<ProductImage product={selectedProduct} />}
+            onClose={closeProduct}
+            onAdd={addItem}
+          />
+        ) : (
+          <ProductModal
+            product={selectedProduct}
+            sizeLabels={sizeLabels}
+            options={options}
+            onClose={closeProduct}
+            onAdd={addToCart}
+          />
+        ))}
 
       {toast && (
         <div className="toast" role="status">
@@ -499,9 +579,12 @@ function PageHeading({ tag, title, text }) {
 
 /* ---------- navigation ---------- */
 
-function DesktopSidebar({ screen, navigate, cartCount }) {
+function DesktopSidebar({ screen, navigate, cartCount, isStaff }) {
   const items = [
     ...NAV_ITEMS,
+    ...(isStaff
+      ? [{ id: "staff", label: "Staff", icon: LayoutDashboard }]
+      : []),
     { id: "settings", label: "Settings", icon: Settings },
   ];
 
@@ -511,7 +594,7 @@ function DesktopSidebar({ screen, navigate, cartCount }) {
         <span className="brand-icon">🍕</span>
 
         <div>
-          <h1>Vhitepizza</h1>
+          <h1>Vhite Pizza</h1>
           <small>Hot Pizza. Fast Delivery.</small>
         </div>
       </div>
@@ -543,12 +626,12 @@ function DesktopSidebar({ screen, navigate, cartCount }) {
   );
 }
 
-function TopBar({ search, onSearch, navigate }) {
+function TopBar({ search, onSearch, navigate, initial }) {
   return (
     <header className="topbar">
       <div className="top-brand">
         <span className="brand-icon">🍕</span>
-        <strong>Vhitepizza</strong>
+        <strong>Vhite Pizza</strong>
       </div>
 
       <label className="search-field top-search">
@@ -583,7 +666,7 @@ function TopBar({ search, onSearch, navigate }) {
           aria-label="Open profile"
           onClick={() => navigate("profile")}
         >
-          V
+          {initial}
         </button>
       </div>
     </header>
@@ -596,7 +679,9 @@ function MobileBottomNav({ screen, navigate, cartCount }) {
       {NAV_ITEMS.map((item) => {
         const Icon = item.icon;
         const active =
-          screen === item.id || (item.id === "profile" && screen === "settings");
+          screen === item.id ||
+          (item.id === "profile" &&
+            ["settings", "auth", "staff"].includes(screen));
 
         return (
           <button
@@ -792,7 +877,7 @@ function HomeView({
       <section className="content-section">
         <SectionHeading
           title="Recent Orders"
-          subtitle="Your latest Vhitepizza orders"
+          subtitle="Your latest Vhite Pizza orders"
         />
 
         <div className="recent-order">
@@ -826,7 +911,7 @@ function ExploreView({
       <PageHeading
         tag="DISCOVER"
         title="Explore Menu"
-        text="Find something delicious from Vhitepizza."
+        text="Find something delicious from Vhite Pizza."
       />
 
       <MobileSearch search={search} onSearch={onSearch} />
@@ -850,6 +935,7 @@ function ExploreView({
   );
 }
 
+// Simple details popup for sides, desserts and drinks.
 function ProductModal({ product, sizeLabels, options, onClose, onAdd }) {
   const sizes = getSizes(product, sizeLabels);
   const [sizeId, setSizeId] = useState(sizes[0]?.id);
@@ -970,13 +1056,22 @@ function CartBody({
               <ImageChain
                 sources={getImageSources(item.image)}
                 alt={item.name}
-                fallback={<span className="image-fallback">🍕</span>}
+                fallback={
+                  <span className="image-fallback">
+                    {CATEGORY_EMOJI[item.category] || "🍕"}
+                  </span>
+                }
               />
             </div>
 
             <div className="cart-item-info">
               <h4>{item.name}</h4>
               <small>{item.sizeLabel}</small>
+
+              {item.details?.length > 0 && (
+                <small className="cart-details">{item.details.join(" · ")}</small>
+              )}
+
               <strong>{formatMoney(item.price)}</strong>
 
               <div className="quantity-controls">
@@ -1092,7 +1187,7 @@ function OrdersView() {
       <PageHeading
         tag="YOUR ORDERS"
         title="Order History"
-        text="Track and view your Vhitepizza orders."
+        text="Track and view your Vhite Pizza orders."
       />
 
       <EmptyState message="Your orders will appear here." />
@@ -1100,23 +1195,56 @@ function OrdersView() {
   );
 }
 
-function ProfileView({ navigate }) {
+function ProfileView({
+  user,
+  name,
+  role,
+  isStaff,
+  navigate,
+  goToAuth,
+  onLogout,
+}) {
   return (
     <div className="page-content">
       <PageHeading
         tag="ACCOUNT"
         title="Profile"
-        text="Manage your Vhitepizza account."
+        text="Manage your Vhite Pizza account."
       />
 
-      <div className="profile-card">
-        <span className="large-avatar">V</span>
+      {user ? (
+        <div className="profile-card">
+         <span className="large-avatar">
+  {user.photoURL ? (
+    <img src={user.photoURL} alt={name || "Profile"} />
+  ) : (
+    (name || user.email || "V").charAt(0).toUpperCase()
+  )}
+</span>
 
-        <div>
-          <h3>Vhitepizza Customer</h3>
-          <p>Sign in to save your addresses and orders.</p>
+          <div>
+            <h3>{name || "Vhite Pizza Customer"}</h3>
+            <p>{user.email}</p>
+            {isStaff && <p>Role: {titleCase(role)}</p>}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="profile-card">
+          <span className="large-avatar">V</span>
+
+          <div>
+            <h3>Welcome to Vhite Pizza</h3>
+            <p>Sign in to order, save addresses and track your orders.</p>
+          </div>
+        </div>
+      )}
+
+      {!user && (
+        <button className="primary-button" onClick={() => goToAuth("profile")}>
+          <LogIn size={18} />
+          Sign In or Create Account
+        </button>
+      )}
 
       <div className="menu-list">
         <button onClick={() => navigate("orders")}>
@@ -1128,6 +1256,17 @@ function ProfileView({ navigate }) {
           <ChevronRight size={18} />
         </button>
 
+        {isStaff && (
+          <button onClick={() => navigate("staff")}>
+            <LayoutDashboard size={20} />
+            <span>
+              <strong>Staff Dashboard</strong>
+              <small>{STAFF_TITLES[role] || "Staff tools"}</small>
+            </span>
+            <ChevronRight size={18} />
+          </button>
+        )}
+
         <button onClick={() => navigate("settings")}>
           <Settings size={20} />
           <span>
@@ -1136,7 +1275,40 @@ function ProfileView({ navigate }) {
           </span>
           <ChevronRight size={18} />
         </button>
+
+        {user && (
+          <button onClick={onLogout}>
+            <LogOut size={20} />
+            <span>
+              <strong>Sign Out</strong>
+              <small>Log out of your account</small>
+            </span>
+            <ChevronRight size={18} />
+          </button>
+        )}
       </div>
+    </div>
+  );
+}
+
+function StaffView({ role, isStaff }) {
+  if (!isStaff) {
+    return (
+      <div className="page-content">
+        <EmptyState message="This area is for Vhite Pizza staff only." />
+      </div>
+    );
+  }
+
+  return (
+    <div className="page-content">
+      <PageHeading
+        tag="STAFF"
+        title={STAFF_TITLES[role] || "Staff"}
+        text="Your tools will appear here in a later phase."
+      />
+
+      <EmptyState message="Nothing to show yet." />
     </div>
   );
 }
@@ -1174,12 +1346,12 @@ function SettingsView({ theme, changeTheme, navigate }) {
       <PageHeading
         tag="PREFERENCES"
         title="Settings"
-        text="Customize your Vhitepizza experience."
+        text="Customize your Vhite Pizza experience."
       />
 
       <section className="settings-card">
         <h3>Appearance</h3>
-        <p>Choose how Vhitepizza looks on your device.</p>
+        <p>Choose how Vhite Pizza looks on your device.</p>
 
         <div className="theme-options">
           {THEME_CHOICES.map((choice) => {
