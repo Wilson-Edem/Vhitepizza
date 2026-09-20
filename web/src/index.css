@@ -1,0 +1,152 @@
+/* Vhite Pizza: design tokens, theme (System / Light / Dark) and base styles.
+   The theme is applied through <html data-theme="light|dark"> by App.jsx.
+   Before JavaScript runs, the device's colour scheme is used. */
+
+:root {
+  --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+
+  --primary: #cc4a1c;
+  --primary-hover: #b53f16;
+  --on-primary: #ffffff;
+  --accent: #cc4a1c;
+  --accent-soft: rgba(204, 74, 28, 0.1);
+
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f4f4f2;
+  --text: #14161a;
+  --muted: #6b7280;
+  --border: #e6e6e2;
+
+  --success: #15803d;
+  --success-soft: rgba(21, 128, 61, 0.12);
+
+  --shadow: 0 6px 24px rgba(20, 22, 26, 0.07);
+  --shadow-lg: 0 20px 60px rgba(20, 22, 26, 0.25);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --nav-height: 68px;
+
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --accent: #ff8a5c;
+  --accent-soft: rgba(255, 138, 92, 0.14);
+
+  --bg: #0e0f12;
+  --surface: #16181d;
+  --surface-2: #1e2128;
+  --text: #f5f5f4;
+  --muted: #a1a1aa;
+  --border: #2a2d35;
+
+  --success: #4ade80;
+  --success-soft: rgba(74, 222, 128, 0.14);
+
+  --shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.6);
+
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --accent: #ff8a5c;
+    --accent-soft: rgba(255, 138, 92, 0.14);
+
+    --bg: #0e0f12;
+    --surface: #16181d;
+    --surface-2: #1e2128;
+    --text: #f5f5f4;
+    --muted: #a1a1aa;
+    --border: #2a2d35;
+
+    --success: #4ade80;
+    --success-soft: rgba(74, 222, 128, 0.14);
+
+    --shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.6);
+
+    color-scheme: dark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: 0;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+input {
+  border: 0;
+  background: none;
+  outline: 0;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
