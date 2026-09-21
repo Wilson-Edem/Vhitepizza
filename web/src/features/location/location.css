@@ -1,0 +1,306 @@
+.location-button span {
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- picker dialog ---------- */
+
+.loc-modal {
+  display: grid;
+  gap: 14px;
+  width: min(640px, 100%);
+  max-height: 92vh;
+  padding: 24px;
+  overflow: auto;
+  border-radius: 26px;
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+}
+
+.loc-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.loc-header h2 {
+  font-size: 22px;
+  letter-spacing: -0.02em;
+}
+
+.loc-header p {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.loc-header button {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--surface-2);
+}
+
+.loc-search {
+  width: 100%;
+}
+
+.loc-results {
+  display: grid;
+  margin: -6px 0 0;
+  padding: 4px;
+  overflow: hidden;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.loc-results button {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  text-align: left;
+}
+
+.loc-results button:hover {
+  background: var(--surface-2);
+}
+
+.loc-map {
+  position: relative;
+  z-index: 0;
+  height: 280px;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+.loc-map .leaflet-container {
+  width: 100%;
+  height: 100%;
+  font: inherit;
+}
+
+.map-pin-wrap {
+  background: none;
+  border: 0;
+}
+
+.map-pin {
+  position: relative;
+  display: block;
+  width: 30px;
+  height: 30px;
+  border: 3px solid #ffffff;
+  border-radius: 50% 50% 50% 0;
+  background: var(--primary);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+  transform: rotate(-45deg);
+}
+
+.map-pin::after {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ffffff;
+  content: "";
+}
+
+.loc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
+
+.loc-locate {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1.5px solid var(--primary);
+  border-radius: 999px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.loc-locate:disabled {
+  opacity: 0.6;
+}
+
+.loc-actions a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  text-decoration: underline;
+}
+
+.loc-note,
+.loc-error {
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+.loc-note {
+  background: var(--accent-soft);
+}
+
+.loc-error {
+  background: rgba(220, 38, 38, 0.12);
+  color: #dc2626;
+}
+
+.loc-form {
+  display: grid;
+  gap: 12px;
+}
+
+.loc-field {
+  display: grid;
+  gap: 6px;
+}
+
+.loc-field span {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.loc-field input,
+.loc-field textarea {
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  resize: vertical;
+}
+
+.loc-field input:focus,
+.loc-field textarea:focus {
+  border-color: var(--accent);
+  outline: 0;
+}
+
+.loc-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.loc-check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+}
+
+/* ---------- saved addresses ---------- */
+
+.address-list {
+  display: grid;
+  gap: 12px;
+}
+
+.address-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.address-info {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.address-info strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.address-info em {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.address-info p {
+  font-size: 14px;
+}
+
+.address-info small {
+  color: var(--muted);
+}
+
+.address-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.address-actions button {
+  display: grid;
+  place-items: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.address-actions button:first-child {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+@media (max-width: 860px) {
+  .loc-modal {
+    width: 100%;
+    max-height: 94vh;
+    padding: 20px;
+    border-radius: 26px 26px 0 0;
+    animation: slide-up 0.25s ease;
+  }
+
+  .loc-map {
+    height: 240px;
+  }
+
+  .address-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .address-actions {
+    justify-content: flex-end;
+  }
+}

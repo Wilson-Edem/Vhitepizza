@@ -27,6 +27,10 @@ import {
 import { useAuth } from "./features/auth/AuthContext";
 import AuthScreen from "./features/auth/AuthScreen";
 import CustomizeSheet from "./features/customize/CustomizeSheet";
+import LocationPicker from "./features/location/LocationPicker";
+import AddressesView from "./features/location/AddressesView";
+import { saveAddress } from "./features/location/addresses";
+import { apiFetch } from "./lib/api";
 import "./App.css";
 
 const API_URL = `${
@@ -34,6 +38,7 @@ const API_URL = `${
 }/menu`;
 const THEME_KEY = "vhitepizza-theme";
 const CART_KEY = "vhitepizza-cart";
+const ADDRESS_KEY = "vhitepizza-address";
 const DELIVERY_FEE = 1500; // Later this will come from Firestore settings/public.
 
 // The hero tries these files in order, so the first one that exists is used.
@@ -92,6 +97,31 @@ const getStoredCart = () => {
     return [];
   }
 };
+
+const getStoredAddress = () => {
+  try {
+    const value = JSON.parse(localStorage.getItem(ADDRESS_KEY));
+    return value && typeof value.formattedAddress === "string" ? value : null;
+  } catch {
+    return null;
+  }
+};
+
+const shortAddress = (address) =>
+  address?.formattedAddress
+    ? address.formattedAddress.split(",")[0].trim()
+    : "";
+
+// What the server needs to price one cart line. Prices are never sent.
+const toOrderItem = (item) => ({
+  productId: item.productId,
+  sizeId: item.sizeId,
+  quantity: item.quantity,
+  crustId: item.crustId ?? null,
+  cheeseId: item.cheeseId ?? null,
+  extraToppingIds: item.extraToppingIds || [],
+  removedToppingIds: item.removedToppingIds || [],
+});
 
 const prefersDark = () =>
   typeof window !== "undefined" &&
@@ -153,6 +183,8 @@ function App() {
   const [cart, setCart] = useState(getStoredCart);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [toast, setToast] = useState("");
+  const [deliveryAddress, setDeliveryAddress] = useState(getStoredAddress);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const [theme, setTheme] = useState(getStoredTheme);
   const [systemDark, setSystemDark] = useState(prefersDark);
@@ -193,6 +225,18 @@ function App() {
       // Ignore storage errors; the cart still works for this visit.
     }
   }, [cart]);
+
+  useEffect(() => {
+    try {
+      if (deliveryAddress) {
+        localStorage.setItem(ADDRESS_KEY, JSON.stringify(deliveryAddress));
+      } else {
+        localStorage.removeItem(ADDRESS_KEY);
+      }
+    } catch {
+      // Ignore storage errors; the address still works for this visit.
+    }
+  }, [deliveryAddress]);
 
   useEffect(() => {
     if (!toast) return undefined;
@@ -350,14 +394,48 @@ function App() {
 
   const clearCart = () => setCart([]);
 
-  const checkout = () => {
+  // Phase 5 check: asks the server to price the cart and compares it with
+  // the total shown here. The real checkout comes in Phase 7.
+  const checkout = async () => {
     if (!user) {
       setToast("Please sign in to check out.");
       goToAuth("cart");
       return;
     }
 
-    setToast("Checkout is coming in the next step.");
+    try {
+      const quote = await apiFetch("/quote", {
+        method: "POST",
+        body: { items: cart.map(toOrderItem) },
+      });
+
+      setToast(
+        quote.total === total
+          ? `Server total ${formatMoney(quote.total)} matches your cart.`
+          : `Server total is ${formatMoney(quote.total)}, your cart shows ${formatMoney(total)}.`
+      );
+    } catch (err) {
+      setToast(err.message);
+    }
+  };
+
+  const chooseAddress = (address) => {
+    setDeliveryAddress(address);
+    setToast("Delivery address updated.");
+  };
+
+  const confirmPicker = async (address, { save, label } = {}) => {
+    setDeliveryAddress(address);
+    setPickerOpen(false);
+
+    if (save && user) {
+      try {
+        await saveAddress(user.uid, address, label || "", false);
+        setToast("Address saved.");
+      } catch {
+        setToast("Could not save this address.");
+      }
+    }
   };
 
   const handleLogout = async () => {
@@ -406,6 +484,8 @@ function App() {
           onSearch={handleSearch}
           navigate={navigate}
           initial={initial}
+          address={deliveryAddress}
+          onPickLocation={() => setPickerOpen(true)}
         />
 
         {needsMenu && loading && (
@@ -459,6 +539,16 @@ function App() {
           <AuthScreen onDone={() => navigate(authReturn)} />
         )}
 
+        {screen === "addresses" && (
+          <AddressesView
+            user={user}
+            dark={resolvedTheme === "dark"}
+            onUse={chooseAddress}
+            goToAuth={goToAuth}
+            onBack={() => navigate("profile")}
+          />
+        )}
+
         {screen === "staff" && <StaffView role={role} isStaff={isStaff} />}
 
         {screen === "settings" && (
@@ -497,6 +587,16 @@ function App() {
             onAdd={addToCart}
           />
         ))}
+
+      {pickerOpen && (
+        <LocationPicker
+          dark={resolvedTheme === "dark"}
+          initial={deliveryAddress}
+          canSave={Boolean(user)}
+          onClose={() => setPickerOpen(false)}
+          onConfirm={confirmPicker}
+        />
+      )}
 
       {toast && (
         <div className="toast" role="status">
@@ -626,7 +726,7 @@ function DesktopSidebar({ screen, navigate, cartCount, isStaff }) {
   );
 }
 
-function TopBar({ search, onSearch, navigate, initial }) {
+function TopBar({ search, onSearch, navigate, initial, address, onPickLocation }) {
   return (
     <header className="topbar">
       <div className="top-brand">
@@ -645,9 +745,13 @@ function TopBar({ search, onSearch, navigate, initial }) {
       </label>
 
       <div className="topbar-right">
-        <button className="location-button" type="button">
+        <button
+          className="location-button"
+          type="button"
+          onClick={onPickLocation}
+        >
           <MapPin size={17} />
-          <span>Lagos, Nigeria</span>
+          <span>{shortAddress(address) || "Set delivery location"}</span>
           <ChevronDown size={15} />
         </button>
 
@@ -681,7 +785,7 @@ function MobileBottomNav({ screen, navigate, cartCount }) {
         const active =
           screen === item.id ||
           (item.id === "profile" &&
-            ["settings", "auth", "staff"].includes(screen));
+            ["settings", "auth", "staff", "addresses"].includes(screen));
 
         return (
           <button
@@ -1255,6 +1359,17 @@ function ProfileView({
           </span>
           <ChevronRight size={18} />
         </button>
+
+        {user && (
+          <button onClick={() => navigate("addresses")}>
+            <MapPin size={20} />
+            <span>
+              <strong>Saved Addresses</strong>
+              <small>Where we deliver your pizza</small>
+            </span>
+            <ChevronRight size={18} />
+          </button>
+        )}
 
         {isStaff && (
           <button onClick={() => navigate("staff")}>

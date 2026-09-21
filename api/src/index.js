@@ -10,6 +10,9 @@ const rateLimit = require("express-rate-limit");
 
 const menuRoutes = require("./routes/menu");
 const userRoutes = require("./routes/users");
+const quoteRoutes = require("./routes/quote");
+const orderRoutes = require("./routes/orders");
+const { startJobs } = require("./jobs/orders");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -36,17 +39,28 @@ app.get("/api/v1/health", (req, res) => {
 
 app.use("/api/v1/menu", menuRoutes);
 app.use("/api/v1/users", userRoutes);
+app.use("/api/v1/quote", quoteRoutes);
+app.use("/api/v1/orders", orderRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ success: false, message: "Not found." });
 });
 
+// Errors with a status below 500 (like "Your cart is empty.") are shown to the
+// customer. Anything else is logged and hidden.
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).json({ success: false, message: "Something went wrong." });
+  const status = Number(err.status) || 500;
+
+  if (status >= 500) console.error(err);
+
+  res.status(status).json({
+    success: false,
+    message: status < 500 ? err.message : "Something went wrong.",
+  });
 });
 
 app.listen(PORT, () => {
   console.log(`Vhitepizza API running on port ${PORT}`);
+  startJobs();
 });
