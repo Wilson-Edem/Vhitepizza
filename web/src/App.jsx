@@ -29,6 +29,8 @@ import AuthScreen from "./features/auth/AuthScreen";
 import CustomizeSheet from "./features/customize/CustomizeSheet";
 import LocationPicker from "./features/location/LocationPicker";
 import AddressesView from "./features/location/AddressesView";
+import CheckoutView from "./features/checkout/CheckoutView";
+import OrdersView from "./features/orders/OrdersView";
 import { saveAddress } from "./features/location/addresses";
 import { apiFetch } from "./lib/api";
 import "./App.css";
@@ -39,7 +41,7 @@ const API_URL = `${
 const THEME_KEY = "vhitepizza-theme";
 const CART_KEY = "vhitepizza-cart";
 const ADDRESS_KEY = "vhitepizza-address";
-const DELIVERY_FEE = 1500; // Later this will come from Firestore settings/public.
+
 
 // The hero tries these files in order, so the first one that exists is used.
 const HERO_SOURCES = [
@@ -176,6 +178,8 @@ function App() {
   const [error, setError] = useState("");
 
   const [screen, setScreen] = useState("home");
+  const [checkoutAddress, setCheckoutAddress] = useState(null);
+  const [deliveryFee, setDeliveryFee] = useState(0);
   const [authReturn, setAuthReturn] = useState("profile");
   const [activeCategory, setActiveCategory] = useState("all");
   const [search, setSearch] = useState("");
@@ -254,7 +258,11 @@ function App() {
         if (!response.ok) throw new Error("Unable to load menu.");
         return response.json();
       })
-      .then((result) => setMenu(result?.data ?? result))
+     .then((result) => {
+  const menuData = result?.data ?? result;
+  setMenu(menuData);
+  setDeliveryFee(Number(menuData?.settings?.flatDeliveryFee ?? 0));
+})
       .catch((err) => {
         if (err.name === "AbortError") return;
         console.error(err);
@@ -317,7 +325,7 @@ function App() {
     (total, item) => total + item.price * item.quantity,
     0
   );
-  const deliveryFee = cart.length ? DELIVERY_FEE : 0;
+ 
   const total = subtotal + deliveryFee;
 
   const navigate = (next) => {
@@ -394,49 +402,26 @@ function App() {
 
   const clearCart = () => setCart([]);
 
-  // Phase 5 check: asks the server to price the cart and compares it with
-  // the total shown here. The real checkout comes in Phase 7.
-  const checkout = async () => {
-    if (!user) {
-      setToast("Please sign in to check out.");
-      goToAuth("cart");
-      return;
-    }
-
-    try {
-      const quote = await apiFetch("/quote", {
-        method: "POST",
-        body: { items: cart.map(toOrderItem) },
-      });
-
-      setToast(
-        quote.total === total
-          ? `Server total ${formatMoney(quote.total)} matches your cart.`
-          : `Server total is ${formatMoney(quote.total)}, your cart shows ${formatMoney(total)}.`
-      );
-    } catch (err) {
-      setToast(err.message);
-    }
-  };
 
   const chooseAddress = (address) => {
     setDeliveryAddress(address);
     setToast("Delivery address updated.");
   };
 
-  const confirmPicker = async (address, { save, label } = {}) => {
-    setDeliveryAddress(address);
-    setPickerOpen(false);
+ const confirmPicker = async (address, { save, label } = {}) => {
+  setDeliveryAddress(address);
+  setCheckoutAddress(address);
+  setPickerOpen(false);
 
-    if (save && user) {
-      try {
-        await saveAddress(user.uid, address, label || "", false);
-        setToast("Address saved.");
-      } catch {
-        setToast("Could not save this address.");
-      }
+  if (save && user) {
+    try {
+      await saveAddress(user.uid, address, label || "", false);
+      setToast("Address saved.");
+    } catch {
+      setToast("Could not save this address.");
     }
-  };
+  }
+};
 
   const handleLogout = async () => {
     await logout();
@@ -452,7 +437,7 @@ function App() {
     updateQuantity,
     removeFromCart,
     clearCart,
-    onCheckout: checkout,
+   onCheckout: () => setScreen("checkout"),
   };
 
   const menuProps = {
@@ -521,7 +506,23 @@ function App() {
           <CartPage {...cartProps} onBack={() => navigate("home")} />
         )}
 
-        {screen === "orders" && <OrdersView />}
+       {screen === "orders" && (
+  <OrdersView
+    user={user}
+    onToast={setToast}
+    onSignIn={() => goToAuth("orders")}
+  />
+)}
+      {screen === "checkout" && (
+ <CheckoutView
+  cart={cart}
+  user={user}
+  deliveryAddress={checkoutAddress}
+  onPickAddress={() => setPickerOpen(true)}
+  onBack={() => setScreen("cart")}
+  onToast={setToast}
+/>
+)}
 
         {screen === "profile" && (
           <ProfileView
@@ -1283,21 +1284,7 @@ function CartPage(props) {
   );
 }
 
-/* ---------- account screens ---------- */
 
-function OrdersView() {
-  return (
-    <div className="page-content">
-      <PageHeading
-        tag="YOUR ORDERS"
-        title="Order History"
-        text="Track and view your Vhite Pizza orders."
-      />
-
-      <EmptyState message="Your orders will appear here." />
-    </div>
-  );
-}
 
 function ProfileView({
   user,

@@ -61,6 +61,10 @@ export default function CustomizeSheet({
         : [...current.toppingIds, id],
     }));
 
+  const selectedExtras = toppings.filter(
+    (item) => picked.has(item.id) && !defaults.has(item.id)
+  );
+
   const groups = [
     ...TOPPING_GROUPS.map(([id, label]) => ({
       id,
@@ -78,7 +82,6 @@ export default function CustomizeSheet({
 
   const handleAdd = () => {
     const size = sizes.find((item) => item.id === selection.sizeId) || sizes[0];
-
     if (!size) return;
 
     const crust = crusts.find((item) => item.id === selection.crustId);
@@ -138,19 +141,26 @@ export default function CustomizeSheet({
         <div className="modal-image">{imageSlot}</div>
 
         <div className="modal-content">
-          <h2>{product.name}</h2>
-          <p>{product.description}</p>
+          <div className="customize-intro">
+            <h2>{product.name}</h2>
+            <p>{product.description}</p>
+          </div>
+
+          <div className="customize-hint">
+            <strong>Build your pizza your way</strong>
+            <span>
+              Keep the included toppings, remove them, or add a variety of extra
+              toppings from any group.
+            </span>
+          </div>
 
           <div className="option-block">
             <h4>Size</h4>
-
             <div className="option-grid">
               {sizes.map((size) => (
                 <button
                   key={size.id}
-                  className={`option-chip ${
-                    selection.sizeId === size.id ? "selected" : ""
-                  }`}
+                  className={`option-chip ${selection.sizeId === size.id ? "selected" : ""}`}
                   aria-pressed={selection.sizeId === size.id}
                   onClick={() => choose("sizeId", size.id)}
                 >
@@ -164,14 +174,11 @@ export default function CustomizeSheet({
           {crusts.length > 0 && (
             <div className="option-block">
               <h4>Crust</h4>
-
               <div className="option-grid">
                 {crusts.map((crust) => (
                   <button
                     key={crust.id}
-                    className={`option-chip ${
-                      selection.crustId === crust.id ? "selected" : ""
-                    }`}
+                    className={`option-chip ${selection.crustId === crust.id ? "selected" : ""}`}
                     aria-pressed={selection.crustId === crust.id}
                     onClick={() => choose("crustId", crust.id)}
                   >
@@ -186,14 +193,11 @@ export default function CustomizeSheet({
           {cheeses.length > 0 && (
             <div className="option-block">
               <h4>Cheese</h4>
-
               <div className="option-grid">
                 {cheeses.map((cheese) => (
                   <button
                     key={cheese.id}
-                    className={`option-chip ${
-                      selection.cheeseId === cheese.id ? "selected" : ""
-                    }`}
+                    className={`option-chip ${selection.cheeseId === cheese.id ? "selected" : ""}`}
                     aria-pressed={selection.cheeseId === cheese.id}
                     onClick={() => choose("cheeseId", cheese.id)}
                   >
@@ -212,14 +216,16 @@ export default function CustomizeSheet({
 
           {groups.map((group) => (
             <div className="option-block" key={group.id}>
-              <h4>{group.label}</h4>
+              <div className="topping-heading">
+                <h4>{group.label}</h4>
+                <span>{group.items.length} choices</span>
+              </div>
 
-              <div className="option-scroll">
+              <div className="topping-grid">
                 {group.items.map((topping) => {
                   const isPicked = picked.has(topping.id);
                   const isDefault = defaults.has(topping.id);
                   const price = formatMoney(topping.price);
-
                   const note = isPicked
                     ? isDefault
                       ? "Included"
@@ -231,9 +237,7 @@ export default function CustomizeSheet({
                   return (
                     <button
                       key={topping.id}
-                      className={`option-chip ${isPicked ? "selected" : ""} ${
-                        !isPicked && isDefault ? "removed" : ""
-                      }`}
+                      className={`option-chip topping-chip ${isPicked ? "selected" : ""} ${!isPicked && isDefault ? "removed" : ""}`}
                       aria-pressed={isPicked}
                       onClick={() => toggleTopping(topping.id)}
                     >
@@ -247,25 +251,27 @@ export default function CustomizeSheet({
             </div>
           ))}
 
+          <div className="selected-toppings">
+            <span>
+              Extra toppings selected: <strong>{selectedExtras.length}</strong>
+            </span>
+            {selectedExtras.length > 0 && (
+              <div>
+                {selectedExtras.map((item) => <em key={item.id}>{item.name}</em>)}
+              </div>
+            )}
+          </div>
+
           <div className="customize-footer">
             <div className="qty">
-              <button
-                aria-label="Decrease quantity"
-                onClick={() => setQuantity((current) => Math.max(1, current - 1))}
-              >
+              <button aria-label="Decrease quantity" onClick={() => setQuantity((current) => Math.max(1, current - 1))}>
                 <Minus size={16} />
               </button>
-
               <span>{quantity}</span>
-
-              <button
-                aria-label="Increase quantity"
-                onClick={() => setQuantity((current) => Math.min(20, current + 1))}
-              >
+              <button aria-label="Increase quantity" onClick={() => setQuantity((current) => Math.min(20, current + 1))}>
                 <Plus size={16} />
               </button>
             </div>
-
             <button className="primary-button" onClick={handleAdd}>
               Add to Cart · {formatMoney(unitPrice * quantity)}
             </button>
