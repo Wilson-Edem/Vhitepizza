@@ -115,9 +115,20 @@ export default function CheckoutView({
         { method: "POST" }
       );
 
-      if (!payment.authorizationUrl) {
-        throw new Error("Paystack did not return a checkout URL.");
-      }
+     if (!payment.authorizationUrl) {
+  throw new Error("Paystack did not return a checkout URL.");
+}
+
+localStorage.setItem(
+  "vhitepizza-pending-order-id",
+  order.id
+);
+
+localStorage.setItem(
+  "vhitepizza-pending-payment-reference",
+  payment.reference || ""
+);
+
 
       window.location.assign(payment.authorizationUrl);
     } catch (error) {

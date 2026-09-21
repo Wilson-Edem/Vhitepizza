@@ -11,6 +11,7 @@ const {
   markRefundDone,
   listMine,
   getOrder,
+  setPaymentReference,
 } = require("../services/orders");
 const {
   initializeTransaction,
@@ -69,6 +70,8 @@ router.post("/:id/payment/initialize", async (req, res) => {
     },
   });
 
+  await setPaymentReference(order.id, payment.reference || reference);
+
   res.json({
     success: true,
     data: {
@@ -97,6 +100,12 @@ router.post("/:id/payment/verify", async (req, res) => {
     throw new HttpError(400, "Payment reference is required.");
   }
 
+if (order.payment?.reference !== reference) {
+  throw new HttpError(
+    403,
+    "Payment reference does not belong to this order."
+  );
+}
   const payment = await verifyTransaction(reference);
 
   if (payment.status !== "success") {

@@ -2,6 +2,7 @@
   "name": "vhite-pizza",
   "version": "1.0.0",
   "private": "true",
+  "dev": "vite --host 0.0.0.0",
   "workspaces": [
     "web",
     "api",

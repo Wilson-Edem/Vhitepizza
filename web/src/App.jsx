@@ -29,6 +29,7 @@ import AuthScreen from "./features/auth/AuthScreen";
 import CustomizeSheet from "./features/customize/CustomizeSheet";
 import LocationPicker from "./features/location/LocationPicker";
 import AddressesView from "./features/location/AddressesView";
+import PaymentReturnView from "./features/payment/PaymentReturnView";
 import CheckoutView from "./features/checkout/CheckoutView";
 import OrdersView from "./features/orders/OrdersView";
 import { saveAddress } from "./features/location/addresses";
@@ -177,7 +178,11 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const [screen, setScreen] = useState("home");
+const [screen, setScreen] = useState(
+  window.location.pathname === "/payment/return"
+    ? "payment-return"
+    : "home"
+);
   const [checkoutAddress, setCheckoutAddress] = useState(null);
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [authReturn, setAuthReturn] = useState("profile");
@@ -522,6 +527,14 @@ function App() {
   onBack={() => setScreen("cart")}
   onToast={setToast}
 />
+)}
+
+{screen === "payment-return" && (
+  <PaymentReturnView
+    user={user}
+    onNavigate={navigate}
+    onClearCart={clearCart}
+  />
 )}
 
         {screen === "profile" && (

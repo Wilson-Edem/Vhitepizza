@@ -385,6 +385,49 @@ async function getOrder(orderId, user) {
   return plain({ id: snap.id, ...order });
 }
 
+/* ---------- payment reference ---------- */
+
+async function setPaymentReference(orderId, reference) {
+  requireDb();
+
+  const clean = String(reference || "").trim();
+
+  if (!clean) {
+    throw new HttpError(400, "Payment reference is required.");
+  }
+
+  const ref = db.collection("orders").doc(orderId);
+  const snap = await ref.get();
+
+  if (!snap.exists) {
+    throw new HttpError(404, "Order not found.");
+  }
+
+  await ref.update({
+    "payment.reference": clean,
+    "payment.status": "pending",
+    "payment.initializedAt": FieldValue.serverTimestamp(),
+  });
+
+  return { id: orderId, reference: clean };
+}
+
+async function findOrderIdByPaymentReference(reference) {
+  requireDb();
+
+  const clean = String(reference || "").trim();
+
+  if (!clean) return null;
+
+  const snapshot = await db
+    .collection("orders")
+    .where("payment.reference", "==", clean)
+    .limit(1)
+    .get();
+
+  return snapshot.empty ? null : snapshot.docs[0].id;
+}
+
 module.exports = {
   SYSTEM,
   createOrder,
@@ -395,4 +438,6 @@ module.exports = {
   markRefundDone,
   listMine,
   getOrder,
+  setPaymentReference,
+  findOrderIdByPaymentReference,
 };

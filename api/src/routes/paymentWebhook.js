@@ -14,7 +14,6 @@ const router = express.Router();
 
 function metadataValue(metadata, key) {
   if (!metadata) return null;
-
   if (typeof metadata === "object") return metadata[key] || null;
 
   if (typeof metadata === "string") {
@@ -29,12 +28,12 @@ function metadataValue(metadata, key) {
   return null;
 }
 
-// Public Paystack webhook. Do not put verifyToken on this route.
+// Paystack settlement source of truth.
+// The browser return URL never marks an order as paid.
 router.post("/webhook", async (req, res) => {
   const signature = req.headers["x-paystack-signature"];
-  const rawBody = req.rawBody;
 
-  if (!verifyWebhookSignature(rawBody, signature)) {
+  if (!verifyWebhookSignature(req.rawBody, signature)) {
     return res.status(401).json({
       success: false,
       message: "Invalid webhook signature.",
@@ -44,30 +43,30 @@ router.post("/webhook", async (req, res) => {
   const event = req.body || {};
   const reference = String(event.data?.reference || "").trim();
 
-  // Only successful charges can advance an order. Other events are safely
-  // acknowledged so Paystack does not repeatedly resend them.
   if (event.event !== "charge.success" || !reference) {
     return res.json({ success: true, received: true });
   }
 
-  const orderId =
-    metadataValue(event.data?.metadata, "orderId") ||
-    metadataValue(event.data?.metadata, "order_id") ||
-    (await findOrderIdByPaymentReference(reference));
+  const orderId = await findOrderIdByPaymentReference(reference);
 
   if (!orderId) {
     throw new HttpError(404, "No order matches this payment reference.");
   }
 
-  // The order service is the source of truth. Admin access here is only used
-  // so the webhook can read the order without a customer Firebase token.
   const order = await getOrder(orderId, {
     uid: "__paystack_webhook__",
     role: "admin",
   });
 
-  const transaction = await verifyTransaction(reference);
+  const metadataOrderId =
+    metadataValue(event.data?.metadata, "orderId") ||
+    metadataValue(event.data?.metadata, "order_id");
 
+  if (metadataOrderId && metadataOrderId !== orderId) {
+    throw new HttpError(409, "Payment metadata does not match the order.");
+  }
+
+  const transaction = await verifyTransaction(reference);
   const expectedAmount = Number(order.pricing?.total || 0) * 100;
 
   if (

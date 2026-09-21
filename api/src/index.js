@@ -12,13 +12,32 @@ const menuRoutes = require("./routes/menu");
 const userRoutes = require("./routes/users");
 const quoteRoutes = require("./routes/quote");
 const orderRoutes = require("./routes/orders");
+const paymentWebhookRoutes = require("./routes/paymentWebhook");
 const { startJobs } = require("./jobs/orders");
 
 const app = express();
+app.set("trust proxy", 1);
+app.use(cors());
 const PORT = process.env.PORT || 5000;
 
 app.use(helmet());
 app.use(cors({ origin: process.env.WEB_URL || "http://localhost:5173" }));
+app.use(
+  "/api/v1/payments",
+  express.raw({ type: "application/json" }),
+  (req, res, next) => {
+    req.rawBody = req.body;
+
+    try {
+      req.body = JSON.parse(req.body.toString("utf8"));
+    } catch {
+      req.body = {};
+    }
+
+    next();
+  }
+);
+
 app.use(express.json({ limit: "100kb" }));
 app.use(
   rateLimit({
@@ -41,6 +60,7 @@ app.use("/api/v1/menu", menuRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/quote", quoteRoutes);
 app.use("/api/v1/orders", orderRoutes);
+app.use("/api/v1/payments", paymentWebhookRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ success: false, message: "Not found." });
@@ -60,7 +80,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Vhitepizza API running on port ${PORT}`);
   startJobs();
 });
