@@ -172,7 +172,7 @@ const getIncluded = (product, options) => {
 /* ---------- App ---------- */
 
 function App() {
-  const { user, profile, role, isStaff, logout } = useAuth();
+ const { user, profile, role, isStaff, logout, loading: authLoading } = useAuth();
 
   const [menu, setMenu] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -529,7 +529,7 @@ const [screen, setScreen] = useState(
 />
 )}
 
-{screen === "payment-return" && (
+{screen === "payment-return" && !authLoading && (
   <PaymentReturnView
     user={user}
     onNavigate={navigate}
