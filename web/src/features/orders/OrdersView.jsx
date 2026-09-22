@@ -42,7 +42,7 @@ const formatDate = (value) => {
 
 const statusText = (status) => STATUS_LABELS[status] || status;
 
-export default function OrdersView({ user, onToast, onSignIn }) {
+export default function OrdersView({ user, onToast, onSignIn, initialOrderId, onConsumedInitial }) {
   const [orders, setOrders] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [selected, setSelected] = useState(null);
@@ -76,6 +76,18 @@ export default function OrdersView({ user, onToast, onSignIn }) {
   }, [onToast]);
 
   useEffect(() => { loadOrders(); }, [loadOrders]);
+
+  // Arriving here with a specific order in mind (for example, straight
+  // from Paystack) opens that order's detail right away instead of the
+  // list. Runs once per id, then tells the parent it's been used so
+  // navigating back to Orders later shows the list again.
+  useEffect(() => {
+    if (!initialOrderId) return;
+
+    loadDetail(initialOrderId);
+    onConsumedInitial?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialOrderId]);
 
   useEffect(() => {
     if (!selectedId) return undefined;

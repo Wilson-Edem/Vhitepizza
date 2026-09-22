@@ -10,6 +10,7 @@ const {
   claimOrder,
   markRefundDone,
   listMine,
+  listForStaff,
   getOrder,
   setPaymentReference,
 } = require("../services/orders");
@@ -24,6 +25,18 @@ const router = express.Router();
 router.use(verifyToken);
 
 const roleOf = (req) => req.user.role || "customer";
+
+// Staff: active orders (or a specific status via ?status=) for the
+// admin / kitchen / rider dashboards.
+router.get("/", requireRole("admin", "kitchen", "rider"), async (req, res) => {
+  const orders = await listForStaff({
+    status: req.query.status,
+    role: roleOf(req),
+    uid: req.user.uid,
+  });
+
+  res.json({ success: true, data: orders });
+});
 
 // Customer: create an order (it starts as awaiting_payment).
 router.post("/", async (req, res) => {
@@ -85,6 +98,12 @@ router.post("/:id/payment/initialize", async (req, res) => {
 
 // Customer: verify a Paystack payment after returning from Paystack.
 router.post("/:id/payment/verify", async (req, res) => {
+  console.log("VERIFY HIT:", {
+    orderId: req.params.id,
+    uid: req.user?.uid,
+    body: req.body,
+  });
+
   const order = await getOrder(req.params.id, {
     ...req.user,
     role: roleOf(req),
@@ -100,13 +119,22 @@ router.post("/:id/payment/verify", async (req, res) => {
     throw new HttpError(400, "Payment reference is required.");
   }
 
-if (order.payment?.reference !== reference) {
-  throw new HttpError(
-    403,
-    "Payment reference does not belong to this order."
-  );
-}
+  if (order.payment?.reference !== reference) {
+    throw new HttpError(
+      403,
+      "Payment reference does not belong to this order."
+    );
+  }
+
   const payment = await verifyTransaction(reference);
+
+  console.log("PAYSTACK RESPONSE:", {
+    status: payment.status,
+    reference: payment.reference,
+    currency: payment.currency,
+    amount: payment.amount,
+    requested_amount: payment.requested_amount,
+  });
 
   if (payment.status !== "success") {
     throw new HttpError(402, "Paystack payment was not successful.");
@@ -121,8 +149,15 @@ if (order.payment?.reference !== reference) {
   }
 
   const expectedAmount = Number(order.pricing?.total || 0) * 100;
+  const paidAmount = Number(payment.requested_amount ?? payment.amount);
 
-  if (Number(payment.amount) !== expectedAmount) {
+  console.log("AMOUNT CHECK:", {
+    expectedAmount,
+    paidAmount,
+    orderTotal: order.pricing?.total,
+  });
+
+  if (paidAmount !== expectedAmount) {
     throw new HttpError(400, "Payment amount does not match the order.");
   }
 

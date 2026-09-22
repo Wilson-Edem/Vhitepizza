@@ -1,192 +1,56 @@
-import { useEffect, useState } from "react";
-import { CheckCircle2, Clock3, Loader2, XCircle } from "lucide-react";
+import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
 import { apiFetch } from "../../lib/api";
 
 const ORDER_KEY = "vhitepizza-pending-order-id";
 const REF_KEY = "vhitepizza-pending-payment-reference";
 
-const LABELS = {
-  awaiting_payment: "Awaiting payment",
-  placed: "Order placed",
-  pending_approval: "Awaiting approval",
-  confirmed: "Confirmed",
-  preparing: "Preparing",
-  ready: "Ready",
-  out_for_delivery: "Out for delivery",
-  delivered: "Delivered",
-  cancelled: "Cancelled",
-};
-
-const TRACKING = [
-  "placed",
-  "confirmed",
-  "preparing",
-  "ready",
-  "out_for_delivery",
-  "delivered",
-];
-
+// Landing here means the customer just came back from Paystack. The order
+// already exists on the server (it was created before the redirect), so
+// this screen doesn't need its own tracking UI: it confirms the payment in
+// the background and sends the customer straight to that order's normal
+// detail/tracking page, the same one they'd reach from Order History.
 export default function PaymentReturnView({ user, onNavigate, onClearCart }) {
-  const [order, setOrder] = useState(null);
-  const [error, setError] = useState("");
-
   useEffect(() => {
-    let stopped = false;
-    let timer;
-
     if (!user) {
       onNavigate?.("auth");
-      return undefined;
+      return;
     }
 
     const orderId = localStorage.getItem(ORDER_KEY);
+    const reference = localStorage.getItem(REF_KEY);
 
-    // Direct visits to /payment/return do not verify or settle payments.
     if (!orderId) {
-      setError("No pending payment session was found on this device.");
-      return undefined;
+      // No pending payment on this device; just go to the order list.
+      onNavigate?.("orders");
+      return;
     }
 
-    const load = async () => {
-      try {
-        const result = await apiFetch(
-          `/orders/${encodeURIComponent(orderId)}`
-        );
+    // The items are already committed to this order on the server, so the
+    // cart is cleared right away rather than waiting on payment status.
+    onClearCart?.();
+    localStorage.removeItem(ORDER_KEY);
+    localStorage.removeItem(REF_KEY);
 
-        if (stopped) return;
+    // Confirms with Paystack directly instead of only waiting for the
+    // webhook (which needs a reachable server URL). Fire-and-forget: the
+    // order page we redirect to polls on its own and will show the result
+    // whether this finishes first or the webhook does.
+    if (reference) {
+      apiFetch(`/orders/${encodeURIComponent(orderId)}/payment/verify`, {
+        method: "POST",
+        body: { reference },
+      }).catch(() => {});
+    }
 
-        const data = result?.data ?? result;
-        setOrder(data);
-        setError("");
-
-        // Cart is cleared only after the server says the payment is paid.
-        if (data?.payment?.status === "paid") {
-          onClearCart?.();
-          localStorage.removeItem(ORDER_KEY);
-          localStorage.removeItem(REF_KEY);
-          return;
-        }
-
-        timer = window.setTimeout(load, 3000);
-      } catch (err) {
-        if (!stopped) {
-          setError(err?.message || "Could not load the order.");
-          timer = window.setTimeout(load, 5000);
-        }
-      }
-    };
-
-    load();
-
-    return () => {
-      stopped = true;
-      window.clearTimeout(timer);
-    };
-  }, [user, onNavigate, onClearCart]);
-
-  if (!user) return null;
-
-  if (error && !order) {
-    return (
-      <div className="page-content orders-page">
-        <div className="order-state">
-          <XCircle size={36} />
-          <h2>Payment return</h2>
-          <p>{error}</p>
-          <button
-            className="primary-button"
-            onClick={() => onNavigate?.("orders")}
-          >
-            View my orders
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!order) {
-    return (
-      <div className="page-content orders-page">
-        <div className="order-state">
-          <Loader2 className="spin" size={36} />
-          <h2>Checking your payment</h2>
-          <p>Loading your order status…</p>
-        </div>
-      </div>
-    );
-  }
-
-  const paid = order.payment?.status === "paid";
-  const index = TRACKING.indexOf(order.status);
+    onNavigate?.("orders", orderId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   return (
-    <div className="page-content orders-page">
-      <div className="order-detail-card">
-        <div className="order-detail-top">
-          <div>
-            <span>{order.orderNumber}</span>
-            <h3>
-              {paid ? "Payment confirmed" : "Payment being confirmed"}
-            </h3>
-          </div>
-
-          <strong>
-            ₦{Number(order.pricing?.total || 0).toLocaleString("en-NG")}
-          </strong>
-        </div>
-
-        {!paid && (
-          <div className="order-state">
-            <Clock3 size={28} />
-            <p>
-              Your payment return was received. Vhite Pizza is waiting for the
-              signed Paystack webhook to confirm the transaction. This page
-              updates automatically.
-            </p>
-          </div>
-        )}
-
-        {paid && (
-          <div className="order-state">
-            <CheckCircle2 size={30} />
-            <p>
-              Payment confirmed. Your order is now in the live order workflow.
-            </p>
-          </div>
-        )}
-
-        <div className="order-tracker">
-          {TRACKING.map((status, i) => (
-            <div
-              className={`order-step ${i <= index ? "active" : ""}`}
-              key={status}
-            >
-              <span>{i + 1}</span>
-              <div>
-                <strong>{LABELS[status]}</strong>
-                {i === index && <small>Current status</small>}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="order-address">
-          <strong>Delivery address</strong>
-          <p>{order.address?.formattedAddress}</p>
-        </div>
-
-        <div className="payment-status-row">
-          <span>Payment</span>
-          <strong>{order.payment?.status || "pending"}</strong>
-        </div>
-
-        <button
-          className="primary-button"
-          onClick={() => onNavigate?.("orders")}
-        >
-          View order details
-        </button>
-      </div>
+    <div className="state-box">
+      <Loader2 className="spin" size={36} />
+      <p>Taking you to your order...</p>
     </div>
   );
 }

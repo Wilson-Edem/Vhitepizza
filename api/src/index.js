@@ -13,6 +13,8 @@ const userRoutes = require("./routes/users");
 const quoteRoutes = require("./routes/quote");
 const orderRoutes = require("./routes/orders");
 const paymentWebhookRoutes = require("./routes/paymentWebhook");
+const adminRoutes = require("./routes/admin");
+const { verifyToken } = require("./middleware/auth");
 const { startJobs } = require("./jobs/orders");
 
 const app = express();
@@ -61,6 +63,7 @@ app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/quote", quoteRoutes);
 app.use("/api/v1/orders", orderRoutes);
 app.use("/api/v1/payments", paymentWebhookRoutes);
+app.use("/api/v1/admin", verifyToken, adminRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ success: false, message: "Not found." });

@@ -32,6 +32,7 @@ import AddressesView from "./features/location/AddressesView";
 import PaymentReturnView from "./features/payment/PaymentReturnView";
 import CheckoutView from "./features/checkout/CheckoutView";
 import OrdersView from "./features/orders/OrdersView";
+import StaffDashboard from "./features/staff/StaffDashboard";
 import { saveAddress } from "./features/location/addresses";
 import { apiFetch } from "./lib/api";
 import "./App.css";
@@ -42,7 +43,6 @@ const API_URL = `${
 const THEME_KEY = "vhitepizza-theme";
 const CART_KEY = "vhitepizza-cart";
 const ADDRESS_KEY = "vhitepizza-address";
-
 
 // The hero tries these files in order, so the first one that exists is used.
 const HERO_SOURCES = [
@@ -172,19 +172,20 @@ const getIncluded = (product, options) => {
 /* ---------- App ---------- */
 
 function App() {
- const { user, profile, role, isStaff, logout, loading: authLoading } = useAuth();
+  const { user, profile, role, isStaff, logout, loading: authLoading } = useAuth();
 
   const [menu, setMenu] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-const [screen, setScreen] = useState(
-  window.location.pathname === "/payment/return"
-    ? "payment-return"
-    : "home"
-);
+  const [screen, setScreen] = useState(
+    window.location.pathname === "/payment/return"
+      ? "payment-return"
+      : "home"
+  );
   const [checkoutAddress, setCheckoutAddress] = useState(null);
   const [deliveryFee, setDeliveryFee] = useState(0);
+  const [openOrderId, setOpenOrderId] = useState(null);
   const [authReturn, setAuthReturn] = useState("profile");
   const [activeCategory, setActiveCategory] = useState("all");
   const [search, setSearch] = useState("");
@@ -263,11 +264,11 @@ const [screen, setScreen] = useState(
         if (!response.ok) throw new Error("Unable to load menu.");
         return response.json();
       })
-     .then((result) => {
-  const menuData = result?.data ?? result;
-  setMenu(menuData);
-  setDeliveryFee(Number(menuData?.settings?.flatDeliveryFee ?? 0));
-})
+      .then((result) => {
+        const menuData = result?.data ?? result;
+        setMenu(menuData);
+        setDeliveryFee(Number(menuData?.settings?.flatDeliveryFee ?? 0));
+      })
       .catch((err) => {
         if (err.name === "AbortError") return;
         console.error(err);
@@ -330,14 +331,16 @@ const [screen, setScreen] = useState(
     (total, item) => total + item.price * item.quantity,
     0
   );
- 
+
   const total = subtotal + deliveryFee;
 
-  const navigate = (next) => {
+  const navigate = (next, orderId) => {
     if (next === "staff" && !isStaff) {
       setToast("Staff access only.");
       return;
     }
+
+    if (orderId) setOpenOrderId(orderId);
 
     setScreen(next);
     window.scrollTo(0, 0);
@@ -407,26 +410,25 @@ const [screen, setScreen] = useState(
 
   const clearCart = () => setCart([]);
 
-
   const chooseAddress = (address) => {
     setDeliveryAddress(address);
     setToast("Delivery address updated.");
   };
 
- const confirmPicker = async (address, { save, label } = {}) => {
-  setDeliveryAddress(address);
-  setCheckoutAddress(address);
-  setPickerOpen(false);
+  const confirmPicker = async (address, { save, label } = {}) => {
+    setDeliveryAddress(address);
+    setCheckoutAddress(address);
+    setPickerOpen(false);
 
-  if (save && user) {
-    try {
-      await saveAddress(user.uid, address, label || "", false);
-      setToast("Address saved.");
-    } catch {
-      setToast("Could not save this address.");
+    if (save && user) {
+      try {
+        await saveAddress(user.uid, address, label || "", false);
+        setToast("Address saved.");
+      } catch {
+        setToast("Could not save this address.");
+      }
     }
-  }
-};
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -442,7 +444,7 @@ const [screen, setScreen] = useState(
     updateQuantity,
     removeFromCart,
     clearCart,
-   onCheckout: () => setScreen("checkout"),
+    onCheckout: () => setScreen("checkout"),
   };
 
   const menuProps = {
@@ -511,31 +513,34 @@ const [screen, setScreen] = useState(
           <CartPage {...cartProps} onBack={() => navigate("home")} />
         )}
 
-       {screen === "orders" && (
-  <OrdersView
-    user={user}
-    onToast={setToast}
-    onSignIn={() => goToAuth("orders")}
-  />
-)}
-      {screen === "checkout" && (
- <CheckoutView
-  cart={cart}
-  user={user}
-  deliveryAddress={checkoutAddress}
-  onPickAddress={() => setPickerOpen(true)}
-  onBack={() => setScreen("cart")}
-  onToast={setToast}
-/>
-)}
+        {screen === "orders" && (
+          <OrdersView
+            user={user}
+            onToast={setToast}
+            onSignIn={() => goToAuth("orders")}
+            initialOrderId={openOrderId}
+            onConsumedInitial={() => setOpenOrderId(null)}
+          />
+        )}
 
-{screen === "payment-return" && !authLoading && (
-  <PaymentReturnView
-    user={user}
-    onNavigate={navigate}
-    onClearCart={clearCart}
-  />
-)}
+        {screen === "checkout" && (
+          <CheckoutView
+            cart={cart}
+            user={user}
+            deliveryAddress={checkoutAddress}
+            onPickAddress={() => setPickerOpen(true)}
+            onBack={() => setScreen("cart")}
+            onToast={setToast}
+          />
+        )}
+
+        {screen === "payment-return" && !authLoading && (
+          <PaymentReturnView
+            user={user}
+            onNavigate={navigate}
+            onClearCart={clearCart}
+          />
+        )}
 
         {screen === "profile" && (
           <ProfileView
@@ -563,7 +568,9 @@ const [screen, setScreen] = useState(
           />
         )}
 
-        {screen === "staff" && <StaffView role={role} isStaff={isStaff} />}
+        {screen === "staff" && (
+          <StaffView role={role} isStaff={isStaff} uid={user?.uid} />
+        )}
 
         {screen === "settings" && (
           <SettingsView
@@ -1297,8 +1304,6 @@ function CartPage(props) {
   );
 }
 
-
-
 function ProfileView({
   user,
   name,
@@ -1318,13 +1323,13 @@ function ProfileView({
 
       {user ? (
         <div className="profile-card">
-         <span className="large-avatar">
-  {user.photoURL ? (
-    <img src={user.photoURL} alt={name || "Profile"} />
-  ) : (
-    (name || user.email || "V").charAt(0).toUpperCase()
-  )}
-</span>
+          <span className="large-avatar">
+            {user.photoURL ? (
+              <img src={user.photoURL} alt={name || "Profile"} />
+            ) : (
+              (name || user.email || "V").charAt(0).toUpperCase()
+            )}
+          </span>
 
           <div>
             <h3>{name || "Vhite Pizza Customer"}</h3>
@@ -1406,7 +1411,7 @@ function ProfileView({
   );
 }
 
-function StaffView({ role, isStaff }) {
+function StaffView({ role, isStaff, uid }) {
   if (!isStaff) {
     return (
       <div className="page-content">
@@ -1415,17 +1420,7 @@ function StaffView({ role, isStaff }) {
     );
   }
 
-  return (
-    <div className="page-content">
-      <PageHeading
-        tag="STAFF"
-        title={STAFF_TITLES[role] || "Staff"}
-        text="Your tools will appear here in a later phase."
-      />
-
-      <EmptyState message="Nothing to show yet." />
-    </div>
-  );
+  return <StaffDashboard role={role} uid={uid} />;
 }
 
 const THEME_CHOICES = [

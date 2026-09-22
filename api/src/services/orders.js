@@ -354,6 +354,37 @@ async function markRefundDone(orderId) {
 
 /* ---------- reading ---------- */
 
+const ACTIVE_STATUSES = [
+  "pending_approval",
+  "confirmed",
+  "preparing",
+  "ready",
+  "out_for_delivery",
+];
+
+// For the staff dashboards: every order still being worked on, or a
+// specific status if one is given. Riders only see unclaimed orders plus
+// their own; admin and kitchen see everything in view.
+async function listForStaff({ status, role, uid }) {
+  requireDb();
+
+  let query = db.collection("orders");
+
+  query =
+    status && status !== "active"
+      ? query.where("status", "==", status)
+      : query.where("status", "in", ACTIVE_STATUSES);
+
+  const snapshot = await query.orderBy("createdAt", "asc").limit(100).get();
+  let orders = snapshot.docs.map((doc) => plain({ id: doc.id, ...doc.data() }));
+
+  if (role === "rider") {
+    orders = orders.filter((order) => !order.riderId || order.riderId === uid);
+  }
+
+  return orders;
+}
+
 async function listMine(uid) {
   requireDb();
 
@@ -437,6 +468,7 @@ module.exports = {
   claimOrder,
   markRefundDone,
   listMine,
+  listForStaff,
   getOrder,
   setPaymentReference,
   findOrderIdByPaymentReference,
