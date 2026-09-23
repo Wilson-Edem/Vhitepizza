@@ -38,3 +38,14 @@ export const claimOrder = (orderId) =>
 
 export const markRefundDone = (orderId) =>
   apiFetch(`/orders/${orderId}/refund-done`, { method: "POST" });
+
+// ---------- Admin users ----------
+
+export const listAllUsers = (role) =>
+  apiFetch(`/admin/users?role=${encodeURIComponent(role)}`);
+
+export const setUserActive = (uid, active) =>
+  apiFetch(`/admin/users/${uid}/active`, {
+    method: "PATCH",
+    body: { active },
+  });

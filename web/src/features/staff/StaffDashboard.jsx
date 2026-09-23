@@ -2,12 +2,14 @@ import { useState } from "react";
 import StaffOrders from "./StaffOrders";
 import MenuAvailability from "./MenuAvailability";
 import StaffAccounts from "./StaffAccounts";
+import AdminUsers from "./AdminUsers";
 import "./staff.css";
 
 const ADMIN_TABS = [
   { id: "orders", label: "Orders" },
   { id: "menu", label: "Menu" },
   { id: "staff", label: "Staff" },
+  { id: "users", label: "Users" },
 ];
 
 const TITLES = {
@@ -17,7 +19,7 @@ const TITLES = {
 };
 
 // Drop this in for the old "Nothing to show yet" StaffView placeholder.
-export default function StaffDashboard({ role, uid }) {
+export default function StaffDashboard({ role, uid, dark }) {
   const [tab, setTab] = useState("orders");
 
   return (
@@ -42,11 +44,12 @@ export default function StaffDashboard({ role, uid }) {
       )}
 
       {(role !== "admin" || tab === "orders") && (
-        <StaffOrders role={role} uid={uid} />
+        <StaffOrders role={role} uid={uid} dark={dark} />
       )}
 
       {role === "admin" && tab === "menu" && <MenuAvailability />}
       {role === "admin" && tab === "staff" && <StaffAccounts />}
+      {role === "admin" && tab === "users" && <AdminUsers />}
     </div>
   );
 }

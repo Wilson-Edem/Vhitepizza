@@ -30,6 +30,26 @@ router.patch("/products/:id", async (req, res) => {
   res.json({ success: true, data: { id: req.params.id, available } });
 });
 
+// Every account, for the admin Users screen (tabs by role). Optional
+// ?role=admin|kitchen|rider|customer to filter server-side.
+router.get("/users", async (req, res) => {
+  if (!db) throw new HttpError(503, "Database is not available.");
+
+  const { role } = req.query;
+  let query = db.collection("users");
+
+  if (role && ["admin", "kitchen", "rider", "customer"].includes(role)) {
+    query = query.where("role", "==", role);
+  }
+
+  const snapshot = await query.limit(500).get();
+
+  res.json({
+    success: true,
+    data: snapshot.docs.map((doc) => ({ uid: doc.id, ...doc.data() })),
+  });
+});
+
 // Lists everyone with a staff role, for the Staff Accounts screen.
 router.get("/staff", async (req, res) => {
   if (!db) throw new HttpError(503, "Database is not available.");

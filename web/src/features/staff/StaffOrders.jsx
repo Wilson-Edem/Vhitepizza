@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, MapPin, Phone } from "lucide-react";
 import {
   advanceStatus,
@@ -10,8 +10,36 @@ import {
   watchActiveOrders,
 } from "./orders";
 import "./staff.css";
+import RiderDeliveryMap from "./RiderDeliveryMap";
 
 const formatMoney = (value) => `₦${Number(value || 0).toLocaleString("en-NG")}`;
+
+// Two short beeps for a new-order alert. Generated with the Web Audio API,
+// so no sound file is needed. Browsers block audio before the first click
+// on the page, so the very first alert of a session may be silent.
+function playAlertSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const beep = (start) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.001, ctx.currentTime + start);
+      gain.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + 0.28);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + start);
+      osc.stop(ctx.currentTime + start + 0.3);
+    };
+
+    beep(0);
+    beep(0.35);
+  } catch {
+    // Web Audio unsupported or blocked; not fatal.
+  }
+}
 
 const STATUS_LABEL = {
   pending_approval: "Needs Approval",
@@ -25,19 +53,21 @@ const STATUS_LABEL = {
 const BOARDS = {
   admin: {
     columns: ["pending_approval", "confirmed", "preparing", "ready", "out_for_delivery"],
+    fullDetails: true,
   },
   kitchen: {
     columns: ["confirmed", "preparing"],
     advanceFrom: "preparing",
     advanceTo: "ready",
     advanceLabel: "Mark Ready",
+    fullDetails: true,
   },
   rider: {
     columns: ["ready", "out_for_delivery"],
   },
 };
 
-export default function StaffOrders({ role, uid }) {
+export default function StaffOrders({ role, uid, dark }) {
   const [orders, setOrders] = useState([]);
   const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
@@ -45,9 +75,22 @@ export default function StaffOrders({ role, uid }) {
   const [reasonText, setReasonText] = useState("");
 
   const board = BOARDS[role] || BOARDS.admin;
+  const knownIds = useRef(new Set());
+  const firstLoad = useRef(true);
 
   useEffect(() => {
-    const unsubscribe = watchActiveOrders(setOrders);
+    const unsubscribe = watchActiveOrders((next) => {
+      const ids = new Set(next.map((order) => order.id));
+      const isNew = [...ids].some((id) => !knownIds.current.has(id));
+
+      if (!firstLoad.current && isNew) {
+        playAlertSound();
+      }
+
+      knownIds.current = ids;
+      firstLoad.current = false;
+      setOrders(next);
+    });
 
     return unsubscribe;
   }, []);
@@ -114,6 +157,7 @@ export default function StaffOrders({ role, uid }) {
                 order={order}
                 role={role}
                 uid={uid}
+                dark={dark}
                 board={board}
                 busy={busyId === order.id}
                 onAdvance={() =>
@@ -169,7 +213,7 @@ export default function StaffOrders({ role, uid }) {
 // Kitchen has one clear job (preparing -> ready); admin usually approves or
 // waits for the customer/system, so this only covers the buttons shown.
 function nextStatus(status, role) {
-  if (role === "kitchen" && status === "preparing") return "ready";
+  if (status === "preparing" && ["kitchen", "admin"].includes(role)) return "ready";
   return status;
 }
 
@@ -177,6 +221,7 @@ function OrderCard({
   order,
   role,
   uid,
+  dark,
   board,
   busy,
   onAdvance,
@@ -189,6 +234,8 @@ function OrderCard({
   onRefundDone,
 }) {
   const isMine = order.riderId === uid;
+  const showRiderMap =
+    role === "rider" && isMine && ["ready", "out_for_delivery"].includes(order.status);
   const mapsLink =
     Number.isFinite(order.address?.lat) && Number.isFinite(order.address?.lng)
       ? `https://www.google.com/maps?q=${order.address.lat},${order.address.lng}`
@@ -209,7 +256,19 @@ function OrderCard({
       <ul className="order-items">
         {order.items?.map((item, index) => (
           <li key={index}>
-            {item.quantity}× {item.name} ({item.sizeLabel})
+            <span className="order-item-name">
+              {item.quantity}× {item.name} ({item.sizeLabel})
+            </span>
+
+            {board.fullDetails && item.details?.length > 0 && (
+              <span className="order-item-details">
+                {item.details.join(" · ")}
+              </span>
+            )}
+
+            {board.fullDetails && item.note && (
+              <span className="order-item-note">Note: {item.note}</span>
+            )}
           </li>
         ))}
       </ul>
@@ -234,6 +293,10 @@ function OrderCard({
           <MapPin size={13} />
           Open in Maps
         </a>
+      )}
+
+      {showRiderMap && (
+        <RiderDeliveryMap dark={dark} customer={order.address} />
       )}
 
       {order.payment?.status === "refund_pending" && role === "admin" && (
@@ -263,6 +326,24 @@ function OrderCard({
               Cancel
             </button>
           )}
+
+        {role === "admin" && order.status === "preparing" && (
+          <button className="primary-button" disabled={busy} onClick={onAdvance}>
+            Mark Ready
+          </button>
+        )}
+
+        {role === "admin" && order.status === "ready" && (
+          <button className="primary-button" disabled={busy} onClick={onPickUp}>
+            Out for Delivery
+          </button>
+        )}
+
+        {role === "admin" && order.status === "out_for_delivery" && (
+          <button className="primary-button" disabled={busy} onClick={onDeliver}>
+            Mark Delivered
+          </button>
+        )}
 
         {role === "kitchen" && order.status === "preparing" && (
           <button className="primary-button" disabled={busy} onClick={onAdvance}>

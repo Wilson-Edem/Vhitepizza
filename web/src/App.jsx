@@ -569,7 +569,7 @@ function App() {
         )}
 
         {screen === "staff" && (
-          <StaffView role={role} isStaff={isStaff} uid={user?.uid} />
+          <StaffView role={role} isStaff={isStaff} uid={user?.uid} dark={resolvedTheme === "dark"} />
         )}
 
         {screen === "settings" && (
@@ -1411,7 +1411,7 @@ function ProfileView({
   );
 }
 
-function StaffView({ role, isStaff, uid }) {
+function StaffView({ role, isStaff, uid, dark }) {
   if (!isStaff) {
     return (
       <div className="page-content">
@@ -1420,7 +1420,7 @@ function StaffView({ role, isStaff, uid }) {
     );
   }
 
-  return <StaffDashboard role={role} uid={uid} />;
+  return <StaffDashboard role={role} uid={uid} dark={dark} />;
 }
 
 const THEME_CHOICES = [
