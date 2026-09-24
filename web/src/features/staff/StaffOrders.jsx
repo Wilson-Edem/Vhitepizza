@@ -37,6 +37,7 @@ const STATUS_OPTIONS = [
   ["preparing", "Preparing"],
   ["ready", "Ready"],
   ["out_for_delivery", "Out for delivery"],
+    ["refunds", "Refunds pending"],
 ];
 
 const SORT_OPTIONS = [
@@ -179,6 +180,7 @@ export default function StaffOrders({ role, uid, dark, onOpenActive }) {
           ["Preparing", "preparing", counts.preparing, false],
           ["Ready", "ready", counts.ready, false],
           ["Delivery", "out_for_delivery", counts.out_for_delivery, false],
+              ["Refunds", "refunds", counts.refunds, counts.refunds > 0],
         ].map(([label, value, count, danger]) => (
           <button
             type="button"
