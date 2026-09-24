@@ -358,7 +358,7 @@ useEffect(() => {
     }
 
     const urlRole = staffRoleFromPath();
-    if (urlRole && urlRole !== role) {
+    if (urlRole && role !== "admin" && urlRole !== role) {
       window.history.replaceState({}, "", `/staff/${role || "admin"}`);
     }
     return;
@@ -572,6 +572,17 @@ useEffect(() => {
         dark={resolvedTheme === "dark"}
         onExit={() => navigate("home")}
       />
+    );
+  }
+
+
+  // While Firebase is still restoring the session, show a loader so we don't
+  // flash the wrong screen.
+  if (authLoading) {
+    return (
+      <div className="state-box">
+        <div className="spinner" />
+      </div>
     );
   }
 

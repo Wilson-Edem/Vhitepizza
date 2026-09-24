@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BarChart3, Bike, ChefHat, ClipboardList, LayoutDashboard, Menu, Phone, Settings, ShieldCheck, UserRound, Users } from "lucide-react";
 import StaffOrders, { STATUS_LABELS } from "./StaffOrders";
 import MenuAvailability from "./MenuAvailability";
@@ -22,10 +22,26 @@ const ROLE_CONFIG = {
   rider: { title: "Rider", subtitle: "Delivery operations", icon: Bike },
 };
 
-export default function StaffDashboard({ role, uid, dark }) {
+export default function StaffDashboard({ role, uid, dark, onExit }) {
   const config = ROLE_CONFIG[role] || ROLE_CONFIG.admin;
   const [section, setSection] = useState(role === "admin" ? "overview" : "queue");
   const [activeOrder, setActiveOrder] = useState(null);
+const [menuOpen, setMenuOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+  try {
+    return localStorage.getItem("v2-staff-collapsed") === "true";
+  } catch {
+    return false;
+  }
+});
+
+useEffect(() => {
+  try {
+    localStorage.setItem("v2-staff-collapsed", String(collapsed));
+  } catch {
+    // ignore storage errors
+  }
+}, [collapsed]);
 
   const roleNav = useMemo(() => {
     if (role === "admin") return ADMIN_NAV;
@@ -38,18 +54,112 @@ export default function StaffDashboard({ role, uid, dark }) {
   const returnToQueue = () => { setActiveOrder(null); setSection(role === "admin" ? "orders" : "queue"); };
 
   return (
-    <div className="v2-staff-shell">
-      <aside className="v2-staff-sidebar">
-        <div className="v2-staff-brand"><span className="v2-staff-brand-icon">🍕</span><div><strong>Vhite Pizza</strong><span>Operations</span></div></div>
-        <div className="v2-role-card"><div className="v2-role-icon"><config.icon size={18} /></div><div><strong>{config.title}</strong><span>{config.subtitle}</span></div></div>
+    <div className={`v2-staff-shell ${collapsed ? "is-collapsed" : ""}`}>
+          {menuOpen && (
+  <div
+    className="v2-drawer-backdrop"
+    onClick={() => setMenuOpen(false)}
+  />
+)}
+
+<aside
+  className={`v2-staff-sidebar ${menuOpen ? "drawer-open" : ""}`}
+>
+        <div className="v2-staff-brand">
+          <span className="v2-staff-brand-icon">🍕</span>
+
+          <div className="v2-staff-brand-text">
+            <strong>Vhite Pizza</strong>
+            <span>Operations</span>
+          </div>
+
+          <button
+            className="v2-sidebar-toggle"
+            onClick={() => setCollapsed((c) => !c)}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? "→" : "←"}
+          </button>
+        </div>
+
+        <div className="v2-role-card">
+          <div className="v2-role-icon">
+            <config.icon size={18} />
+          </div>
+
+          <div>
+            <strong>{config.title}</strong>
+            <span>{config.subtitle}</span>
+          </div>
+        </div>
+
         <nav className="v2-staff-nav" aria-label="Staff navigation">
-          {roleNav.map((item) => { const Icon = item.icon; const selected = section === item.id || (item.id === "orders" && section === "active") || (item.id === "queue" && section === "active"); return <button key={item.id} className={selected ? "active" : ""} onClick={() => { setActiveOrder(null); setSection(item.id); }}><Icon size={18} /><span>{item.label}</span></button>; })}
+          {roleNav.map((item) => {
+            const Icon = item.icon;
+            const selected =
+              section === item.id ||
+              (item.id === "orders" && section === "active") ||
+              (item.id === "queue" && section === "active");
+
+            return (
+              <button
+                key={item.id}
+                className={selected ? "active" : ""}
+               onClick={() => {
+  setActiveOrder(null);
+  setSection(item.id);
+  setMenuOpen(false);
+}}
+              >
+                <Icon size={18} />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
         </nav>
-        {activeOrder && <div className="v2-active-nav-card"><span>ACTIVE ORDER</span><strong>{activeOrder.orderNumber}</strong><button onClick={() => setSection("active")}>Open active order</button></div>}
+
+        {activeOrder && (
+          <div className="v2-active-nav-card">
+            <span>ACTIVE ORDER</span>
+            <strong>{activeOrder.orderNumber}</strong>
+
+            <button onClick={() => setSection("active")}>
+              Open active order
+            </button>
+          </div>
+        )}
+
+        <button
+          className="v2-exit-button"
+          onClick={onExit}
+        >
+          ← Exit to store
+        </button>
       </aside>
 
       <section className="v2-staff-main">
-        <header className="v2-staff-header"><div><span>STAFF OPERATIONS</span><h1>{title}</h1></div><div className="v2-header-role"><config.icon size={17} />{config.title}</div></header>
+       <header className="v2-staff-header">
+  <div className="v2-staff-header-left">
+    <button
+      className="v2-mobile-menu-button"
+      onClick={() => setMenuOpen(true)}
+      aria-label="Open menu"
+    >
+      ☰
+    </button>
+
+    <div>
+      <span>STAFF OPERATIONS</span>
+      <h1>{title}</h1>
+    </div>
+  </div>
+
+  <div className="v2-header-role">
+    <config.icon size={17} />
+    {config.title}
+  </div>
+</header>
 
         {section === "overview" && role === "admin" && <AdminOverview onOpenOrders={() => setSection("orders")} />}
         {section === "orders" && role === "admin" && <StaffOrders role={role} uid={uid} dark={dark} onOpenActive={openActiveOrder} />}
