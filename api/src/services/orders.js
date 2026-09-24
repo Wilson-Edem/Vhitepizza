@@ -5,7 +5,6 @@ const { getMenu } = require("./menu");
 const { getSettings } = require("./settings");
 const { priceCart } = require("./pricing");
 const { STATUS, assertTransition, isTerminal } = require("./status");
-const { sendLargeOrderEmail } = require("./email");
 
 const SYSTEM = { uid: null, role: "system" };
 const STAFF_ROLES = ["admin", "kitchen", "rider"];
@@ -213,12 +212,6 @@ async function markPaid(orderId, reference = "") {
       customer: order.customer,
       pricing: order.pricing,
     };
-  }).then((result) => {
-    if (result.status === STATUS.PENDING_APPROVAL) {
-      sendLargeOrderEmail(result).catch(() => {});
-    }
-
-    return { id: result.id, status: result.status };
   });
 }
 

@@ -1,7 +1,7 @@
 import { auth } from "../firebase";
 
 const BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://10.76.157.23:5000/api/v1";
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api/v1";
 
 // Calls the Vhite Pizza API. If a user is logged in, their Firebase token is
 // sent so the server knows who is asking.

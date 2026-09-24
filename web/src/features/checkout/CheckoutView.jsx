@@ -8,6 +8,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { apiFetch } from "../../lib/api";
+import { sendLargeOrderEmail } from "../../lib/sendLargeOrderEmail";
 import "./checkout.css";
 
 const formatMoney = (value) =>
@@ -110,6 +111,9 @@ export default function CheckoutView({
         },
       });
 
+      if (order.requiresApproval) {
+  sendLargeOrderEmail(order, user, deliveryAddress).catch(() => {});
+}
       const payment = await apiFetch(
         `/orders/${encodeURIComponent(order.id)}/payment/initialize`,
         { method: "POST" }
