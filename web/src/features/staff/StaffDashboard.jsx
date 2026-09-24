@@ -303,23 +303,7 @@ function AdminOverview({ onOpenOrders }) {
         />
       </div>
 
-      <section className="v2-overview-panel">
-        <div>
-          <span>PHASE 1</span>
-          <h3>Operations workspace</h3>
-          <p>
-            The new dashboard is designed around fast scanning and clear
-            operational actions rather than a card-heavy Kanban-only layout.
-          </p>
-        </div>
-
-        <div className="v2-overview-points">
-          <span>✓ Search orders and customers</span>
-          <span>✓ Filter by operational status</span>
-          <span>✓ Sort by age and urgency</span>
-          <span>✓ Open focused order views</span>
-        </div>
-      </section>
+     
     </div>
   );
 }

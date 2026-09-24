@@ -20,12 +20,15 @@ import {
 } from "./orders";
 import "./staff.css";
 
-const STATUS_LABEL = {
-  pending_approval: "Needs approval",
+const STATUS_LABELS = {
+  pending_approval: "Needs Approval",
   confirmed: "Confirmed",
   preparing: "Preparing",
   ready: "Ready",
-  out_for_delivery: "Out for delivery",
+  out_for_delivery: "Out for Delivery",
+  delivered: "Delivered",
+  cancelled: "Cancelled",
+  rejected: "Rejected",
 };
 
 const STATUS_OPTIONS = [
