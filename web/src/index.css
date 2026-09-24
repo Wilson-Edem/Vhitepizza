@@ -1,4 +1,4 @@
-/* Vhite Pizza: design tokens, theme (System / Light / Dark) and base styles.
+/* Vhitepizza: design tokens, theme (System / Light / Dark) and base styles.
    The theme is applied through <html data-theme="light|dark"> by App.jsx.
    Before JavaScript runs, the device's colour scheme is used. */
 

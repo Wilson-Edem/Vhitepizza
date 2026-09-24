@@ -14,6 +14,7 @@ const {
   getOrder,
   setPaymentReference,
 } = require("../services/orders");
+const { initiateRefund } = require("../services/refunds");
 const { initializeTransaction, verifyTransaction, CURRENCY } = require("../services/payments/paystack");
 
 const router = express.Router();
@@ -111,8 +112,12 @@ router.post("/:id/problem", requireRole("admin", "kitchen", "rider"), async (req
   res.json({ success: true, data: await flagProblem(req.params.id, { uid: req.user.uid, role: roleOf(req) }, reason) });
 });
 
+router.post("/:id/refund", requireRole("admin"), async (req, res) => {
+  res.json({ success: true, data: await initiateRefund(req.params.id, req.user.uid) });
+});
+
 router.post("/:id/refund-done", requireRole("admin"), async (req, res) => {
-  res.json({ success: true, data: await markRefundDone(req.params.id) });
+  res.json({ success: true, data: await initiateRefund(req.params.id, req.user.uid) });
 });
 
 if (process.env.ALLOW_DEV_PAY === "true") {

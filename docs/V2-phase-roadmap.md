@@ -33,7 +33,7 @@ Native/closed-app notifications deliberately left for V3
 
 
 
-Vhite Pizza V2 — implementation roadmap
+Vhitepizza V2 — implementation roadmap
 Phase
 Main work
 Result

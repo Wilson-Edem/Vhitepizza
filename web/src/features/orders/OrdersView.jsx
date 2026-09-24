@@ -120,7 +120,7 @@ export default function OrdersView({ user, onToast, onSignIn, initialOrderId, on
         <div className="order-state">
           <PackageCheck size={34} />
           <h2>Sign in to view your orders</h2>
-          <p>Your order history is tied to your Vhite Pizza account.</p>
+          <p>Your order history is tied to your Vhitepizza account.</p>
           <button className="primary-button" onClick={onSignIn}>Sign In</button>
         </div>
       </div>

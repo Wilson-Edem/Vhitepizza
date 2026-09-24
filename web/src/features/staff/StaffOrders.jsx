@@ -96,8 +96,12 @@ export default function StaffOrders({ role, uid, dark, onOpenActive }) {
 
   const filteredOrders = useMemo(() => {
     const queryText = search.trim().toLowerCase();
-    const result = orders.filter((order) => {
-      if (status !== "all" && order.status !== status) return false;
+   const result = orders.filter((order) => {
+  if (status === "refunds") {
+    if (order.payment?.status !== "refund_pending") return false;
+  } else if (status !== "all" && order.status !== status) {
+    return false;
+  }
       if (urgencyFilter !== "all" && urgency(order) !== urgencyFilter) return false;
       if (!queryText) return true;
       return [
@@ -120,17 +124,17 @@ export default function StaffOrders({ role, uid, dark, onOpenActive }) {
     });
   }, [orders, search, status, urgencyFilter, sort]);
 
-  const counts = useMemo(
-    () => ({
-      all: orders.length,
-      pending_approval: orders.filter((o) => o.status === "pending_approval").length,
-      confirmed: orders.filter((o) => o.status === "confirmed").length,
-      preparing: orders.filter((o) => o.status === "preparing").length,
-      ready: orders.filter((o) => o.status === "ready").length,
-      out_for_delivery: orders.filter((o) => o.status === "out_for_delivery").length,
-    }),
-    [orders]
-  );
+ const counts = useMemo(() => {
+  return {
+    all: orders.length,
+    pending_approval: orders.filter((o) => o.status === "pending_approval").length,
+    confirmed: orders.filter((o) => o.status === "confirmed").length,
+    preparing: orders.filter((o) => o.status === "preparing").length,
+    ready: orders.filter((o) => o.status === "ready").length,
+    out_for_delivery: orders.filter((o) => o.status === "out_for_delivery").length,
+    refunds: orders.filter((o) => o.payment?.status === "refund_pending").length,
+  };
+}, [orders]);
 
   const run = async (order, task) => {
     setBusyId(order.id);

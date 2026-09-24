@@ -841,7 +841,7 @@ function DesktopSidebar({ screen, navigate, cartCount, isStaff }) {
         <span className="brand-icon">🍕</span>
 
         <div>
-          <h1>Vhite Pizza</h1>
+          <h1>Vhitepizza</h1>
           <small>Hot Pizza. Fast Delivery.</small>
         </div>
       </div>
@@ -878,7 +878,7 @@ function TopBar({ search, onSearch, navigate, initial, address, onPickLocation }
     <header className="topbar">
       <div className="top-brand">
         <span className="brand-icon">🍕</span>
-        <strong>Vhite Pizza</strong>
+        <strong>Vhitepizza</strong>
       </div>
 
       <label className="search-field top-search">
@@ -960,7 +960,7 @@ function HeroBanner({ onOrderNow }) {
       <ImageChain
         className="hero-image"
         sources={HERO_SOURCES}
-        alt="Fresh pizza from Vhite Pizza"
+        alt="Fresh pizza from Vhitepizza"
         priority
       />
 
@@ -1128,7 +1128,7 @@ function HomeView({
       <section className="content-section">
         <SectionHeading
           title="Recent Orders"
-          subtitle="Your latest Vhite Pizza orders"
+          subtitle="Your latest Vhitepizza orders"
         />
 
         <div className="recent-order">
@@ -1162,7 +1162,7 @@ function ExploreView({
       <PageHeading
         tag="DISCOVER"
         title="Explore Menu"
-        text="Find something delicious from Vhite Pizza."
+        text="Find something delicious from Vhitepizza."
       />
 
       <MobileSearch search={search} onSearch={onSearch} />
@@ -1444,7 +1444,7 @@ function ProfileView({
       <PageHeading
         tag="ACCOUNT"
         title="Profile"
-        text="Manage your Vhite Pizza account."
+        text="Manage your Vhitepizza account."
       />
 
       {user ? (
@@ -1458,7 +1458,7 @@ function ProfileView({
           </span>
 
           <div>
-            <h3>{name || "Vhite Pizza Customer"}</h3>
+            <h3>{name || "Vhitepizza Customer"}</h3>
             <p>{user.email}</p>
             {isStaff && <p>Role: {titleCase(role)}</p>}
           </div>
@@ -1468,7 +1468,7 @@ function ProfileView({
           <span className="large-avatar">V</span>
 
           <div>
-            <h3>Welcome to Vhite Pizza</h3>
+            <h3>Welcome to Vhitepizza</h3>
             <p>Sign in to order, save addresses and track your orders.</p>
           </div>
         </div>
@@ -1541,7 +1541,7 @@ function StaffView({ role, isStaff, uid, dark }) {
   if (!isStaff) {
     return (
       <div className="page-content">
-        <EmptyState message="This area is for Vhite Pizza staff only." />
+        <EmptyState message="This area is for Vhitepizza staff only." />
       </div>
     );
   }
@@ -1582,12 +1582,12 @@ function SettingsView({ theme, changeTheme, navigate }) {
       <PageHeading
         tag="PREFERENCES"
         title="Settings"
-        text="Customize your Vhite Pizza experience."
+        text="Customize your Vhitepizza experience."
       />
 
       <section className="settings-card">
         <h3>Appearance</h3>
-        <p>Choose how Vhite Pizza looks on your device.</p>
+        <p>Choose how Vhitepizza looks on your device.</p>
 
         <div className="theme-options">
           {THEME_CHOICES.map((choice) => {

@@ -69,7 +69,7 @@ useEffect(() => {
           <span className="v2-staff-brand-icon">🍕</span>
 
           <div className="v2-staff-brand-text">
-            <strong>Vhite Pizza</strong>
+            <strong>Vhitepizza</strong>
             <span>Operations</span>
           </div>
 
@@ -175,7 +175,7 @@ useEffect(() => {
 }
 
 function AdminOverview({ onOpenOrders }) {
-  return <div className="v2-overview"><section className="v2-overview-hero"><div><span>RESTAURANT OPERATIONS</span><h2>Everything important in one place.</h2><p>Monitor incoming orders, kitchen progress and deliveries from the Vhite Pizza operations workspace.</p></div><button className="primary-button" onClick={onOpenOrders}>Open orders<ClipboardList size={17} /></button></section><div className="v2-stat-grid"><StatCard icon={ClipboardList} label="Active orders" value="Live" text="Realtime order queue" /><StatCard icon={ChefHat} label="Kitchen" value="Live" text="Preparing orders" /><StatCard icon={Bike} label="Deliveries" value="Live" text="Rider activity" /><StatCard icon={BarChart3} label="Operations" value="Ready" text="V2 workspace" /></div></div>;
+  return <div className="v2-overview"><section className="v2-overview-hero"><div><span>RESTAURANT OPERATIONS</span><h2>Everything important in one place.</h2><p>Monitor incoming orders, kitchen progress and deliveries from the Vhitepizza operations workspace.</p></div><button className="primary-button" onClick={onOpenOrders}>Open orders<ClipboardList size={17} /></button></section><div className="v2-stat-grid"><StatCard icon={ClipboardList} label="Active orders" value="Live" text="Realtime order queue" /><StatCard icon={ChefHat} label="Kitchen" value="Live" text="Preparing orders" /><StatCard icon={Bike} label="Deliveries" value="Live" text="Rider activity" /><StatCard icon={BarChart3} label="Operations" value="Ready" text="V2 workspace" /></div></div>;
 }
 
 function StatCard({ icon: Icon, label, value, text }) { return <article className="v2-stat-card"><div className="v2-stat-icon"><Icon size={18} /></div><div><span>{label}</span><strong>{value}</strong><small>{text}</small></div></article>; }

@@ -1,4 +1,4 @@
-# Vhite Pizza v2 Foundations
+# Vhitepizza v2 Foundations
 
 Status: planning only. No application code yet. Items marked **PROPOSED** are
 suggestions and need confirmation. This document assumes v1 is complete and
@@ -89,7 +89,7 @@ Rider:    Available (board) -> Active Delivery (on Claim)
 ### 3.3 Refund automation
 
 v1: admin refunds manually in the Paystack dashboard, then clicks "Mark
-Refunded" in Vhite Pizza to update the record. v2: the "Mark Refunded"
+Refunded" in Vhitepizza to update the record. v2: the "Mark Refunded"
 button actually calls Paystack's refund API and does it, in one step.
 
 - Server: a new endpoint calls Paystack's refund endpoint with the order's

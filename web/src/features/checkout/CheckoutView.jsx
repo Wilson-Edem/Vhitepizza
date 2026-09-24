@@ -304,7 +304,7 @@ localStorage.setItem(
           <div className="payment-note">
             <ShieldCheck size={17} />
             <span>
-              Vhite Pizza verifies the transaction on the server before the order
+              Vhitepizza verifies the transaction on the server before the order
               moves into the kitchen workflow.
             </span>
           </div>

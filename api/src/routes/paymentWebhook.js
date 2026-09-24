@@ -8,6 +8,7 @@ const {
   markPaid,
   getOrder,
 } = require("../services/orders");
+const { recordRefundEvent } = require("../services/refunds");
 const { HttpError } = require("../utils/errors");
 
 const router = express.Router();
@@ -28,8 +29,6 @@ function metadataValue(metadata, key) {
   return null;
 }
 
-// Paystack settlement source of truth.
-// The browser return URL never marks an order as paid.
 router.post("/webhook", async (req, res) => {
   const signature = req.headers["x-paystack-signature"];
 
@@ -41,6 +40,12 @@ router.post("/webhook", async (req, res) => {
   }
 
   const event = req.body || {};
+
+  if (String(event.event || "").startsWith("refund.")) {
+    const result = await recordRefundEvent(event);
+    return res.json({ success: true, received: true, refund: result });
+  }
+
   const reference = String(event.data?.reference || "").trim();
 
   if (event.event !== "charge.success" || !reference) {

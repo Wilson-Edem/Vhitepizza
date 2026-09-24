@@ -8,6 +8,7 @@ const ACTIVE = [
   "preparing",
   "ready",
   "out_for_delivery",
+  "cancelled",
 ];
 
 export function watchActiveOrders(onChange, onError) {
@@ -54,7 +55,7 @@ export const flagProblem = (orderId, reason) =>
   });
 
 export const markRefundDone = (orderId) =>
-  apiFetch(`/orders/${orderId}/refund-done`, { method: "POST" });
+  apiFetch(`/orders/${orderId}/refund`, { method: "POST" });
 
 export const listAllUsers = (role) =>
   apiFetch(`/admin/users?role=${encodeURIComponent(role)}`);

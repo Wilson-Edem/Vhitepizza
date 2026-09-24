@@ -1,4 +1,4 @@
-# Vhite Pizza: Phase 1 Foundations
+# Vhitepizza: Phase 1 Foundations
 
 Status: planning only. No application code yet. Items marked **PROPOSED** are my suggestions and need your confirmation.
 
@@ -6,7 +6,7 @@ Status: planning only. No application code yet. Items marked **PROPOSED** are my
 
 ## 1. Decisions so far
 
-- **Product:** Vhite Pizza, a real restaurant's pizza delivery platform for Nigeria. Prices in whole Naira (₦).
+- **Product:** Vhitepizza, a real restaurant's pizza delivery platform for Nigeria. Prices in whole Naira (₦).
 - **Stack:** React + Vite + Tailwind (web, hosted on Vercel), Firebase Auth / Firestore / Storage, Node.js + Express server (write logic, pricing, payments, emails).
 - **Customers:** must sign in (Google, email + password, phone number with SMS for recovery). Customer updates are in-app only.
 - **Staff:** three roles. Admin (controls everything), Kitchen (sees orders, Ready button), Rider (sees ready orders, customer location; can claim an order or be assigned one).
@@ -15,7 +15,7 @@ Status: planning only. No application code yet. Items marked **PROPOSED** are my
 - **Confirmation:** automatic for normal orders; large orders need admin approval. Customers pay upfront; rejected or cancelled paid orders are refunded (v1: admin processes refunds in the payment dashboard).
 - **Cancellation:** customers can cancel until the order moves to Preparing, which happens automatically after confirmation.
 - **Alerts:** urgent (large) orders trigger an email to the restaurant; everything else uses dashboard sound + badge.
-- **Location:** a map picker built into Vhite Pizza (Leaflet with Geoapify map tiles): current location, address search, draggable pin, or manual entry (address, phone, landmark, notes). VhiteMap stays a separate app; Vhite Pizza only links to it so a customer can view their exact live location. No data flows between the two.
+- **Location:** a map picker built into Vhitepizza (Leaflet with Geoapify map tiles): current location, address search, draggable pin, or manual entry (address, phone, landmark, notes). VhiteMap stays a separate app; Vhitepizza only links to it so a customer can view their exact live location. No data flows between the two.
 - **Theme:** dark or light, chosen in Settings.
 - **Images:** menu and topping images live in `web/public/images` in the repo. Firebase Storage needs a paid plan, so it is not used in v1.
 - **Email:** Web3Forms sends urgent-order alerts to the restaurant.
@@ -206,7 +206,7 @@ Known v1 tradeoff: kitchen staff can read full order documents, including the cu
 
 **Geoapify**
 1. Create an account and a project.
-2. Use one API key for the Vhite Pizza web app (map tiles, address search and reverse lookup all run in the browser). Restrict it to allowed origins: `http://localhost:5173` and the Vercel domain.
+2. Use one API key for the Vhitepizza web app (map tiles, address search and reverse lookup all run in the browser). Restrict it to allowed origins: `http://localhost:5173` and the Vercel domain.
 3. Watch daily usage in the Geoapify dashboard. The key is visible in the browser, so origin limits reduce misuse but do not fully prevent it.
 
 **Paystack** (replaces Razorpay, which does not serve Nigerian businesses)

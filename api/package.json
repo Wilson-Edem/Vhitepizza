@@ -11,7 +11,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "Vhite Pizza API",
+  "description": "Vhitepizza API",
   "dependencies": {
     "axios": "^1.20.0",
     "cors": "^2.8.6",

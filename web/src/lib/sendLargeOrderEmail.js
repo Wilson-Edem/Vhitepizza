@@ -22,7 +22,7 @@ export async function sendLargeOrderEmail(order, user, address) {
       body: JSON.stringify({
         access_key: key,
         subject: `Large order needs approval — ${order.orderNumber}`,
-        from_name: "Vhite Pizza",
+        from_name: "Vhitepizza",
         message,
       }),
     });

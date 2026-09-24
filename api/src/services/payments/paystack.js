@@ -91,6 +91,38 @@ async function verifyTransaction(reference) {
   );
 }
 
+async function createRefund({
+  transaction,
+  amountNaira,
+  customerNote,
+  merchantNote,
+}) {
+  const cleanTransaction = String(transaction || "").trim();
+
+  if (!cleanTransaction) {
+    throw new HttpError(400, "A Paystack transaction reference is required for a refund.");
+  }
+
+  const payload = {
+    transaction: cleanTransaction,
+  };
+
+  if (amountNaira !== undefined && amountNaira !== null) {
+    const naira = Number(amountNaira);
+
+    if (!Number.isInteger(naira) || naira <= 0) {
+      throw new HttpError(400, "The refund amount is not valid.");
+    }
+
+    payload.amount = String(naira * 100);
+  }
+
+  if (customerNote) payload.customer_note = String(customerNote);
+  if (merchantNote) payload.merchant_note = String(merchantNote);
+
+  return request("POST", "/refund", payload);
+}
+
 function verifyWebhookSignature(rawBody, signature) {
   const secret = process.env.PAYSTACK_SECRET_KEY;
 
@@ -115,5 +147,6 @@ module.exports = {
   CURRENCY,
   initializeTransaction,
   verifyTransaction,
+  createRefund,
   verifyWebhookSignature,
 };

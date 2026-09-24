@@ -79,7 +79,7 @@ export default function StaffAccounts() {
       </form>
 
       <p className="staff-hint">
-        The person must already have a Vhite Pizza account (they sign up like
+        The person must already have a Vhitepizza account (they sign up like
         any customer first). This only changes their role.
       </p>
 

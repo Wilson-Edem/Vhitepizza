@@ -22,7 +22,7 @@ async function sendEmail({ subject, message }) {
         access_key: key,
         subject,
         message,
-        from_name: "Vhite Pizza",
+        from_name: "Vhitepizza",
         botcheck: false,
       }),
     });
