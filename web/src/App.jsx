@@ -336,6 +336,40 @@ function App() {
     return () => controller.abort();
   }, []);
 
+  // Browser back/forward: re-read the URL and update the screen.
+useEffect(() => {
+  const onPop = () => setScreen(screenFromPath());
+  window.addEventListener("popstate", onPop);
+  return () => window.removeEventListener("popstate", onPop);
+}, []);
+
+// Permission + role guard.
+useEffect(() => {
+  if (authLoading) return;
+
+  const path = window.location.pathname;
+  const wanted = screenFromPath();
+
+  if (path.startsWith("/staff")) {
+    if (!isStaff) {
+      window.history.replaceState({}, "", "/");
+      setScreen("home");
+      return;
+    }
+
+    const urlRole = staffRoleFromPath();
+    if (urlRole && urlRole !== role) {
+      window.history.replaceState({}, "", `/staff/${role || "admin"}`);
+    }
+    return;
+  }
+
+  if (REQUIRES_AUTH.includes(wanted) && !user) {
+    window.history.replaceState({}, "", "/");
+    setScreen("home");
+  }
+}, [isStaff, role, user, authLoading]);
+
   const sizeLabels = useMemo(
     () =>
       Object.fromEntries(
@@ -387,7 +421,7 @@ function App() {
 
   const total = subtotal + deliveryFee;
 
- const navigate = (next, orderId) => {
+  const navigate = (next, orderId) => {
   if (next === "staff" && !isStaff) {
     setToast("Staff access only.");
     return;
@@ -395,7 +429,16 @@ function App() {
 
   if (orderId) setOpenOrderId(orderId);
 
-  const path = pathForScreen(next, role);
+  // Keep the URL in sync so /staff/admin, /staff/kitchen, /staff/rider work.
+  let path = "/";
+
+  if (next === "staff") {
+    path = `/staff/${role || "admin"}`;
+  } else if (next === "payment-return") {
+    path = "/payment/return";
+  } else if (next !== "home") {
+    path = `/${next}`;
+  }
 
   if (window.location.pathname !== path) {
     window.history.pushState({}, "", path);
@@ -404,6 +447,7 @@ function App() {
   setScreen(next);
   window.scrollTo(0, 0);
 };
+
   const goToAuth = (back = "profile") => {
     setAuthReturn(back);
     navigate("auth");
@@ -1151,41 +1195,6 @@ function ProductModal({ product, sizeLabels, options, onClose, onAdd }) {
       document.body.style.overflow = "";
     };
   }, [onClose]);
-
- useEffect(() => {
-  const onPop = () => setScreen(screenFromPath());
-
-  window.addEventListener("popstate", onPop);
-  return () => window.removeEventListener("popstate", onPop);
-}, []);
-useEffect(() => {
-  // Wait for Firebase to restore the session before deciding.
-  if (authLoading) return;
-
-  const path = window.location.pathname;
-  const wanted = screenFromPath();
-
-  // Staff area
-  if (path.startsWith("/staff")) {
-    if (!isStaff) {
-      window.history.replaceState({}, "", "/");
-      setScreen("home");
-      return;
-    }
-
-    const urlRole = staffRoleFromPath();
-    if (urlRole && urlRole !== role) {
-      window.history.replaceState({}, "", `/staff/${role || "admin"}`);
-    }
-    return;
-  }
-
-  // Protected screens for signed-in users
-  if (REQUIRES_AUTH.includes(wanted) && !user) {
-    window.history.replaceState({}, "", "/");
-    setScreen("home");
-  }
-}, [isStaff, role, user, authLoading]);
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
