@@ -77,6 +77,63 @@ const STAFF_TITLES = {
 };
 
 /* ---------- helpers ---------- */
+// Screen IDs → URL paths
+const SCREEN_PATHS = {
+  home: "/",
+  explore: "/menu",
+  cart: "/cart",
+  orders: "/orders",
+  checkout: "/checkout",
+  "payment-return": "/payment/return",
+  profile: "/profile",
+  auth: "/signin",
+  addresses: "/profile/addresses",
+  settings: "/profile/settings",
+};
+
+// Screens that require a signed-in user. Visiting without a user → home.
+const REQUIRES_AUTH = [
+  "orders",
+  "checkout",
+  "addresses",
+  "staff",
+];
+
+// Parses the current URL into a screen id. Unknown paths fall back to home.
+function screenFromPath() {
+  const path = window.location.pathname;
+
+  if (path === "/" || path === "") return "home";
+  if (path === "/menu") return "explore";
+  if (path === "/cart") return "cart";
+  if (path === "/orders") return "orders";
+  if (path === "/checkout") return "checkout";
+  if (path === "/payment/return") return "payment-return";
+  if (path === "/profile") return "profile";
+  if (path === "/profile/addresses") return "addresses";
+  if (path === "/profile/settings") return "settings";
+  if (path === "/signin") return "auth";
+  if (path.startsWith("/staff")) return "staff";
+
+  return "home";
+}
+
+// Which staff role the URL asks for, if any.
+function staffRoleFromPath() {
+  const path = window.location.pathname;
+
+  if (path === "/staff/admin") return "admin";
+  if (path === "/staff/kitchen") return "kitchen";
+  if (path === "/staff/rider") return "rider";
+
+  return null;
+}
+
+// Converts a screen id back into a URL path.
+function pathForScreen(screen, role) {
+  if (screen === "staff") return `/staff/${role || "admin"}`;
+  return SCREEN_PATHS[screen] || "/";
+}
 
 const formatMoney = (value) =>
   `₦${Number(value || 0).toLocaleString("en-NG")}`;
@@ -178,11 +235,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const [screen, setScreen] = useState(
-    window.location.pathname === "/payment/return"
-      ? "payment-return"
-      : "home"
-  );
+ const [screen, setScreen] = useState(screenFromPath());
   const [checkoutAddress, setCheckoutAddress] = useState(null);
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [openOrderId, setOpenOrderId] = useState(null);
@@ -334,18 +387,23 @@ function App() {
 
   const total = subtotal + deliveryFee;
 
-  const navigate = (next, orderId) => {
-    if (next === "staff" && !isStaff) {
-      setToast("Staff access only.");
-      return;
-    }
+ const navigate = (next, orderId) => {
+  if (next === "staff" && !isStaff) {
+    setToast("Staff access only.");
+    return;
+  }
 
-    if (orderId) setOpenOrderId(orderId);
+  if (orderId) setOpenOrderId(orderId);
 
-    setScreen(next);
-    window.scrollTo(0, 0);
-  };
+  const path = pathForScreen(next, role);
 
+  if (window.location.pathname !== path) {
+    window.history.pushState({}, "", path);
+  }
+
+  setScreen(next);
+  window.scrollTo(0, 0);
+};
   const goToAuth = (back = "profile") => {
     setAuthReturn(back);
     navigate("auth");
@@ -460,6 +518,19 @@ function App() {
   };
 
   const needsMenu = screen === "home" || screen === "explore";
+
+  // Staff dashboard renders full-screen, outside the customer shell.
+  if (screen === "staff" && isStaff) {
+    return (
+      <StaffDashboard
+        role={role}
+        uid={user?.uid}
+        dark={resolvedTheme === "dark"}
+        onExit={() => navigate("home")}
+      />
+    );
+  }
+
 
   return (
     <div className="app-shell">
@@ -1080,6 +1151,41 @@ function ProductModal({ product, sizeLabels, options, onClose, onAdd }) {
       document.body.style.overflow = "";
     };
   }, [onClose]);
+
+ useEffect(() => {
+  const onPop = () => setScreen(screenFromPath());
+
+  window.addEventListener("popstate", onPop);
+  return () => window.removeEventListener("popstate", onPop);
+}, []);
+useEffect(() => {
+  // Wait for Firebase to restore the session before deciding.
+  if (authLoading) return;
+
+  const path = window.location.pathname;
+  const wanted = screenFromPath();
+
+  // Staff area
+  if (path.startsWith("/staff")) {
+    if (!isStaff) {
+      window.history.replaceState({}, "", "/");
+      setScreen("home");
+      return;
+    }
+
+    const urlRole = staffRoleFromPath();
+    if (urlRole && urlRole !== role) {
+      window.history.replaceState({}, "", `/staff/${role || "admin"}`);
+    }
+    return;
+  }
+
+  // Protected screens for signed-in users
+  if (REQUIRES_AUTH.includes(wanted) && !user) {
+    window.history.replaceState({}, "", "/");
+    setScreen("home");
+  }
+}, [isStaff, role, user, authLoading]);
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
