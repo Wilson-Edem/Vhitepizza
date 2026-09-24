@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, MapPin, Phone } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowDown,
+  ArrowUp,
+  Clock3,
+  MapPin,
+  Phone,
+  Search,
+  SlidersHorizontal,
+} from "lucide-react";
 import {
   advanceStatus,
   approveOrder,
@@ -10,83 +19,97 @@ import {
   watchActiveOrders,
 } from "./orders";
 import "./staff.css";
-import RiderDeliveryMap from "./RiderDeliveryMap";
-
-const formatMoney = (value) => `₦${Number(value || 0).toLocaleString("en-NG")}`;
-
-// Two short beeps for a new-order alert. Generated with the Web Audio API,
-// so no sound file is needed. Browsers block audio before the first click
-// on the page, so the very first alert of a session may be silent.
-function playAlertSound() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const beep = (start) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      osc.frequency.value = 880;
-      gain.gain.setValueAtTime(0.001, ctx.currentTime + start);
-      gain.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + start + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + 0.28);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(ctx.currentTime + start);
-      osc.stop(ctx.currentTime + start + 0.3);
-    };
-
-    beep(0);
-    beep(0.35);
-  } catch {
-    // Web Audio unsupported or blocked; not fatal.
-  }
-}
 
 const STATUS_LABEL = {
-  pending_approval: "Needs Approval",
+  pending_approval: "Needs approval",
   confirmed: "Confirmed",
   preparing: "Preparing",
   ready: "Ready",
-  out_for_delivery: "Out for Delivery",
+  out_for_delivery: "Out for delivery",
 };
 
-// Which statuses each role sees, and what "advance" means for them.
-const BOARDS = {
-  admin: {
-    columns: ["pending_approval", "confirmed", "preparing", "ready", "out_for_delivery"],
-    fullDetails: true,
-  },
-  kitchen: {
-    columns: ["confirmed", "preparing"],
-    advanceFrom: "preparing",
-    advanceTo: "ready",
-    advanceLabel: "Mark Ready",
-    fullDetails: true,
-  },
-  rider: {
-    columns: ["ready", "out_for_delivery"],
-  },
-};
+const STATUS_OPTIONS = [
+  ["all", "All statuses"],
+  ["pending_approval", "Needs approval"],
+  ["confirmed", "Confirmed"],
+  ["preparing", "Preparing"],
+  ["ready", "Ready"],
+  ["out_for_delivery", "Out for delivery"],
+];
 
-export default function StaffOrders({ role, uid, dark }) {
+const SORT_OPTIONS = [
+  ["newest", "Newest first"],
+  ["oldest", "Oldest first"],
+  ["highest", "Highest value"],
+];
+
+const formatMoney = (value) =>
+  `₦${Number(value || 0).toLocaleString("en-NG")}`;
+
+function orderTime(order) {
+  const value =
+    order.createdAt?.toDate?.() ||
+    (order.createdAt ? new Date(order.createdAt) : null);
+
+  if (!value || Number.isNaN(value.getTime())) {
+    return 0;
+  }
+
+  return value.getTime();
+}
+
+function ageMinutes(order) {
+  const created = orderTime(order);
+
+  if (!created) return 0;
+
+  return Math.max(0, Math.floor((Date.now() - created) / 60000));
+}
+
+function urgency(order) {
+  if (order.requiresApproval && order.status === "pending_approval") {
+    return "critical";
+  }
+
+  const age = ageMinutes(order);
+
+  if (age >= 60) return "late";
+  if (age >= 35) return "warning";
+
+  return "normal";
+}
+
+function urgencyLabel(value) {
+  if (value === "critical") return "Needs attention";
+  if (value === "late") return "Running long";
+  if (value === "warning") return "Aging";
+
+  return "Normal";
+}
+
+export default function StaffOrders({
+  role,
+  uid,
+  dark,
+  onOpenActive,
+}) {
   const [orders, setOrders] = useState([]);
   const [busyId, setBusyId] = useState("");
   const [error, setError] = useState("");
   const [reasonFor, setReasonFor] = useState(null);
   const [reasonText, setReasonText] = useState("");
 
-  const board = BOARDS[role] || BOARDS.admin;
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("all");
+  const [urgencyFilter, setUrgencyFilter] = useState("all");
+  const [sort, setSort] = useState("newest");
+
   const knownIds = useRef(new Set());
   const firstLoad = useRef(true);
 
   useEffect(() => {
     const unsubscribe = watchActiveOrders((next) => {
       const ids = new Set(next.map((order) => order.id));
-      const isNew = [...ids].some((id) => !knownIds.current.has(id));
-
-      if (!firstLoad.current && isNew) {
-        playAlertSound();
-      }
-
       knownIds.current = ids;
       firstLoad.current = false;
       setOrders(next);
@@ -95,15 +118,54 @@ export default function StaffOrders({ role, uid, dark }) {
     return unsubscribe;
   }, []);
 
-  const columns = useMemo(
-    () =>
-      board.columns.map((status) => ({
-        status,
-        label: STATUS_LABEL[status],
-        orders: orders.filter((order) => order.status === status),
-      })),
-    [orders, board]
-  );
+  const filteredOrders = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    const result = orders.filter((order) => {
+      if (status !== "all" && order.status !== status) {
+        return false;
+      }
+
+      const orderUrgency = urgency(order);
+
+      if (
+        urgencyFilter !== "all" &&
+        orderUrgency !== urgencyFilter
+      ) {
+        return false;
+      }
+
+      if (!query) return true;
+
+      const searchable = [
+        order.orderNumber,
+        order.customer?.name,
+        order.customer?.phone,
+        order.customer?.email,
+        order.address?.formattedAddress,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return searchable.includes(query);
+    });
+
+    return [...result].sort((a, b) => {
+      if (sort === "highest") {
+        return (
+          Number(b.pricing?.total || 0) -
+          Number(a.pricing?.total || 0)
+        );
+      }
+
+      if (sort === "oldest") {
+        return orderTime(a) - orderTime(b);
+      }
+
+      return orderTime(b) - orderTime(a);
+    });
+  }, [orders, search, status, urgencyFilter, sort]);
 
   const run = async (order, task) => {
     setBusyId(order.id);
@@ -112,7 +174,7 @@ export default function StaffOrders({ role, uid, dark }) {
     try {
       await task();
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Something went wrong.");
     } finally {
       setBusyId("");
     }
@@ -124,6 +186,8 @@ export default function StaffOrders({ role, uid, dark }) {
   };
 
   const submitReason = async () => {
+    if (!reasonFor) return;
+
     const { order, kind } = reasonFor;
 
     await run(order, () =>
@@ -135,69 +199,212 @@ export default function StaffOrders({ role, uid, dark }) {
     setReasonFor(null);
   };
 
+  const counts = useMemo(() => {
+    return {
+      all: orders.length,
+      pending_approval: orders.filter(
+        (order) => order.status === "pending_approval"
+      ).length,
+      confirmed: orders.filter(
+        (order) => order.status === "confirmed"
+      ).length,
+      preparing: orders.filter(
+        (order) => order.status === "preparing"
+      ).length,
+      ready: orders.filter(
+        (order) => order.status === "ready"
+      ).length,
+      out_for_delivery: orders.filter(
+        (order) => order.status === "out_for_delivery"
+      ).length,
+    };
+  }, [orders]);
+
   return (
-    <div className="staff-board">
-      {error && <div className="loc-error">{error}</div>}
+    <div className="v2-orders-workspace">
+      {error && <div className="v2-error">{error}</div>}
 
-      <div className="staff-columns">
-        {columns.map((column) => (
-          <div className="staff-column" key={column.status}>
-            <h3>
-              {column.label}
-              <span>{column.orders.length}</span>
-            </h3>
+      <div className="v2-order-summary">
+        <SummaryPill
+          label="Active"
+          value={counts.all}
+          active={status === "all"}
+          onClick={() => setStatus("all")}
+        />
 
-            {column.orders.length === 0 && (
-              <p className="staff-empty">Nothing here right now.</p>
-            )}
+        <SummaryPill
+          label="Approval"
+          value={counts.pending_approval}
+          active={status === "pending_approval"}
+          danger={counts.pending_approval > 0}
+          onClick={() => setStatus("pending_approval")}
+        />
 
-            {column.orders.map((order) => (
-              <OrderCard
-                key={order.id}
-                order={order}
-                role={role}
-                uid={uid}
-                dark={dark}
-                board={board}
-                busy={busyId === order.id}
-                onAdvance={() =>
-                  run(order, () =>
-                    advanceStatus(order.id, board.advanceTo || nextStatus(order.status, role))
-                  )
-                }
-                onApprove={() => run(order, () => approveOrder(order.id))}
-                onReject={() => openReason(order, "reject")}
-                onCancel={() => openReason(order, "cancel")}
-                onClaim={() => run(order, () => claimOrder(order.id))}
-                onPickUp={() => run(order, () => advanceStatus(order.id, "out_for_delivery"))}
-                onDeliver={() => run(order, () => advanceStatus(order.id, "delivered"))}
-                onRefundDone={() => run(order, () => markRefundDone(order.id))}
-              />
-            ))}
-          </div>
-        ))}
+        <SummaryPill
+          label="Confirmed"
+          value={counts.confirmed}
+          active={status === "confirmed"}
+          onClick={() => setStatus("confirmed")}
+        />
+
+        <SummaryPill
+          label="Preparing"
+          value={counts.preparing}
+          active={status === "preparing"}
+          onClick={() => setStatus("preparing")}
+        />
+
+        <SummaryPill
+          label="Ready"
+          value={counts.ready}
+          active={status === "ready"}
+          onClick={() => setStatus("ready")}
+        />
+
+        <SummaryPill
+          label="Delivery"
+          value={counts.out_for_delivery}
+          active={status === "out_for_delivery"}
+          onClick={() => setStatus("out_for_delivery")}
+        />
       </div>
 
+      <section className="v2-orders-panel">
+        <div className="v2-orders-toolbar">
+          <div className="v2-order-search">
+            <Search size={17} />
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search order number or customer..."
+            />
+          </div>
+
+          <div className="v2-filter-group">
+            <SlidersHorizontal size={16} />
+
+            <select
+              value={status}
+              onChange={(event) => setStatus(event.target.value)}
+            >
+              {STATUS_OPTIONS.map(([value, label]) => (
+                <option value={value} key={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={urgencyFilter}
+              onChange={(event) =>
+                setUrgencyFilter(event.target.value)
+              }
+            >
+              <option value="all">All urgency</option>
+              <option value="critical">Needs attention</option>
+              <option value="warning">Aging</option>
+              <option value="late">Running long</option>
+              <option value="normal">Normal</option>
+            </select>
+
+            <select
+              value={sort}
+              onChange={(event) => setSort(event.target.value)}
+            >
+              {SORT_OPTIONS.map(([value, label]) => (
+                <option value={value} key={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="v2-orders-meta">
+          <span>
+            Showing <strong>{filteredOrders.length}</strong> of{" "}
+            <strong>{orders.length}</strong> active orders
+          </span>
+
+          <span className="v2-live-indicator">
+            <i />
+            Live
+          </span>
+        </div>
+
+        <div className="v2-order-list">
+          {filteredOrders.length === 0 && (
+            <div className="v2-empty-orders">
+              <ClipboardIcon />
+              <h3>No orders match these filters</h3>
+              <p>
+                Try changing the search, status or urgency filter.
+              </p>
+            </div>
+          )}
+
+          {filteredOrders.map((order) => (
+            <StaffOrderRow
+              key={order.id}
+              order={order}
+              role={role}
+              uid={uid}
+              busy={busyId === order.id}
+              onOpen={() => onOpenActive?.(order)}
+              onAdvance={(target) =>
+                run(order, () =>
+                  advanceStatus(order.id, target)
+                )
+              }
+              onApprove={() =>
+                run(order, () => approveOrder(order.id))
+              }
+              onReject={() => openReason(order, "reject")}
+              onCancel={() => openReason(order, "cancel")}
+              onClaim={() =>
+                run(order, () => claimOrder(order.id))
+              }
+              onRefundDone={() =>
+                run(order, () => markRefundDone(order.id))
+              }
+            />
+          ))}
+        </div>
+      </section>
+
       {reasonFor && (
-        <div className="modal-backdrop" onClick={() => setReasonFor(null)}>
-          <div className="reason-modal" onClick={(event) => event.stopPropagation()}>
+        <div
+          className="modal-backdrop"
+          onClick={() => setReasonFor(null)}
+        >
+          <div
+            className="reason-modal"
+            onClick={(event) => event.stopPropagation()}
+          >
             <h3>
-              {reasonFor.kind === "reject" ? "Reject order" : "Cancel order"}{" "}
+              {reasonFor.kind === "reject"
+                ? "Reject order"
+                : "Cancel order"}{" "}
               {reasonFor.order.orderNumber}
             </h3>
 
             <textarea
-              rows={3}
+              rows={4}
               value={reasonText}
-              onChange={(event) => setReasonText(event.target.value)}
+              onChange={(event) =>
+                setReasonText(event.target.value)
+              }
               placeholder="Reason (the customer will see this)"
             />
 
             <div className="reason-actions">
-              <button onClick={() => setReasonFor(null)}>Never mind</button>
+              <button onClick={() => setReasonFor(null)}>
+                Never mind
+              </button>
+
               <button
                 className="primary-button"
-                disabled={!reasonText.trim()}
+                disabled={!reasonText.trim() || Boolean(busyId)}
                 onClick={submitReason}
               >
                 Confirm
@@ -210,169 +417,239 @@ export default function StaffOrders({ role, uid, dark }) {
   );
 }
 
-// Kitchen has one clear job (preparing -> ready); admin usually approves or
-// waits for the customer/system, so this only covers the buttons shown.
-function nextStatus(status, role) {
-  if (status === "preparing" && ["kitchen", "admin"].includes(role)) return "ready";
-  return status;
+function SummaryPill({
+  label,
+  value,
+  active,
+  danger,
+  onClick,
+}) {
+  return (
+    <button
+      className={`v2-summary-pill ${active ? "active" : ""} ${
+        danger ? "danger" : ""
+      }`}
+      onClick={onClick}
+    >
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </button>
+  );
 }
 
-function OrderCard({
+function StaffOrderRow({
   order,
   role,
   uid,
-  dark,
-  board,
   busy,
+  onOpen,
   onAdvance,
   onApprove,
   onReject,
   onCancel,
   onClaim,
-  onPickUp,
-  onDeliver,
   onRefundDone,
 }) {
+  const orderUrgency = urgency(order);
   const isMine = order.riderId === uid;
-  const showRiderMap =
-    role === "rider" && isMine && ["ready", "out_for_delivery"].includes(order.status);
-  const mapsLink =
-    Number.isFinite(order.address?.lat) && Number.isFinite(order.address?.lng)
-      ? `https://www.google.com/maps?q=${order.address.lat},${order.address.lng}`
-      : null;
+
+  const canOpenActive =
+    (role === "kitchen" && order.status === "preparing") ||
+    (role === "rider" &&
+      isMine &&
+      ["ready", "out_for_delivery"].includes(order.status));
 
   return (
-    <article className="order-card">
-      <div className="order-card-top">
-        <strong>{order.orderNumber}</strong>
-        {order.requiresApproval && order.status === "pending_approval" && (
-          <span className="order-tag">
-            <AlertTriangle size={13} />
-            Large order
-          </span>
-        )}
-      </div>
+    <article className={`v2-order-row urgency-${orderUrgency}`}>
+      <div className="v2-order-main">
+        <div className="v2-order-id">
+          <strong>{order.orderNumber}</strong>
 
-      <ul className="order-items">
-        {order.items?.map((item, index) => (
-          <li key={index}>
-            <span className="order-item-name">
-              {item.quantity}× {item.name} ({item.sizeLabel})
-            </span>
-
-            {board.fullDetails && item.details?.length > 0 && (
-              <span className="order-item-details">
-                {item.details.join(" · ")}
+          {order.requiresApproval &&
+            order.status === "pending_approval" && (
+              <span className="v2-order-alert">
+                <AlertTriangle size={13} />
+                Large
               </span>
             )}
+        </div>
 
-            {board.fullDetails && item.note && (
-              <span className="order-item-note">Note: {item.note}</span>
-            )}
-          </li>
-        ))}
-      </ul>
+        <div className="v2-order-customer">
+          <strong>{order.customer?.name || "Customer"}</strong>
 
-      <div className="order-total">{formatMoney(order.pricing?.total)}</div>
+          {order.customer?.phone && (
+            <a href={`tel:${order.customer.phone}`}>
+              <Phone size={13} />
+              {order.customer.phone}
+            </a>
+          )}
+        </div>
 
-      <div className="order-customer">
-        <span>{order.customer?.name || "Customer"}</span>
-        <a href={`tel:${order.customer?.phone}`}>
-          <Phone size={13} />
-          {order.customer?.phone}
-        </a>
+        <div className="v2-order-items-preview">
+          {(order.items || []).slice(0, 2).map((item, index) => (
+            <span key={index}>
+              {item.quantity}× {item.name}
+            </span>
+          ))}
+
+          {(order.items || []).length > 2 && (
+            <span>+{order.items.length - 2} more</span>
+          )}
+        </div>
       </div>
 
-      <p className="order-address">
-        {order.address?.formattedAddress}
-        {order.address?.landmark ? ` · Near ${order.address.landmark}` : ""}
-      </p>
+      <div className="v2-order-status">
+        <span className={`v2-status status-${order.status}`}>
+          {STATUS_LABELS[order.status] || order.status}
+        </span>
 
-      {mapsLink && role !== "kitchen" && (
-        <a className="order-map-link" href={mapsLink} target="_blank" rel="noreferrer">
-          <MapPin size={13} />
-          Open in Maps
-        </a>
-      )}
+        <span className="v2-urgency">
+          {orderUrgency === "late" && <Clock3 size={13} />}
+          {urgencyLabel(orderUrgency)}
+        </span>
+      </div>
 
-      {showRiderMap && (
-        <RiderDeliveryMap dark={dark} customer={order.address} />
-      )}
+      <div className="v2-order-location">
+        <MapPin size={14} />
 
-      {order.payment?.status === "refund_pending" && role === "admin" && (
-        <div className="order-refund">
-          <span>Refund pending</span>
-          <button disabled={busy} onClick={onRefundDone}>
-            Mark refunded
-          </button>
-        </div>
-      )}
+        <span>
+          {order.address?.formattedAddress ||
+            "No delivery address"}
+        </span>
+      </div>
 
-      <div className="order-actions">
-        {role === "admin" && order.status === "pending_approval" && (
-          <>
-            <button className="primary-button" disabled={busy} onClick={onApprove}>
-              Approve
-            </button>
-            <button disabled={busy} onClick={onReject}>
-              Reject
-            </button>
-          </>
-        )}
+      <div className="v2-order-value">
+        <strong>{formatMoney(order.pricing?.total)}</strong>
+        <span>{ageMinutes(order)} min old</span>
+      </div>
+
+      <div className="v2-order-actions">
+        <button
+          className="v2-secondary-action"
+          onClick={onOpen}
+        >
+          Details
+        </button>
 
         {role === "admin" &&
-          !["pending_approval", "out_for_delivery"].includes(order.status) && (
-            <button className="ghost-danger" disabled={busy} onClick={onCancel}>
+          order.status === "pending_approval" && (
+            <>
+              <button
+                className="v2-primary-action"
+                disabled={busy}
+                onClick={onApprove}
+              >
+                Approve
+              </button>
+
+              <button
+                className="v2-danger-action"
+                disabled={busy}
+                onClick={onReject}
+              >
+                Reject
+              </button>
+            </>
+          )}
+
+        {role === "admin" &&
+          !["pending_approval", "out_for_delivery"].includes(
+            order.status
+          ) && (
+            <button
+              className="v2-danger-action"
+              disabled={busy}
+              onClick={onCancel}
+            >
               Cancel
             </button>
           )}
 
-        {role === "admin" && order.status === "preparing" && (
-          <button className="primary-button" disabled={busy} onClick={onAdvance}>
-            Mark Ready
-          </button>
-        )}
+        {role === "kitchen" &&
+          order.status === "confirmed" && (
+            <button
+              className="v2-primary-action"
+              disabled={busy}
+              onClick={() => onAdvance("preparing")}
+            >
+              Start
+            </button>
+          )}
 
-        {role === "admin" && order.status === "ready" && (
-          <button className="primary-button" disabled={busy} onClick={onPickUp}>
-            Out for Delivery
-          </button>
-        )}
+        {role === "kitchen" &&
+          order.status === "preparing" && (
+            <button
+              className="v2-primary-action"
+              disabled={busy}
+              onClick={() => onAdvance("ready")}
+            >
+              Ready
+            </button>
+          )}
 
-        {role === "admin" && order.status === "out_for_delivery" && (
-          <button className="primary-button" disabled={busy} onClick={onDeliver}>
-            Mark Delivered
-          </button>
-        )}
+        {role === "rider" &&
+          order.status === "ready" &&
+          !order.riderId && (
+            <button
+              className="v2-primary-action"
+              disabled={busy}
+              onClick={onClaim}
+            >
+              Claim
+            </button>
+          )}
 
-        {role === "kitchen" && order.status === "preparing" && (
-          <button className="primary-button" disabled={busy} onClick={onAdvance}>
-            {board.advanceLabel}
-          </button>
-        )}
+        {role === "rider" &&
+          order.status === "out_for_delivery" &&
+          isMine && (
+            <button
+              className="v2-primary-action"
+              disabled={busy}
+              onClick={() => onAdvance("delivered")}
+            >
+              Delivered
+            </button>
+          )}
 
-        {role === "rider" && order.status === "ready" && !order.riderId && (
-          <button className="primary-button" disabled={busy} onClick={onClaim}>
-            Claim this delivery
-          </button>
-        )}
+        {role === "admin" &&
+          order.payment?.status === "refund_pending" && (
+            <button
+              className="v2-refund-action"
+              disabled={busy}
+              onClick={onRefundDone}
+            >
+              Mark refunded
+            </button>
+          )}
 
-        {role === "rider" && order.status === "ready" && isMine && (
+        {canOpenActive && (
           <button
-            className="primary-button"
-            disabled={busy}
-            onClick={onPickUp}
+            className="v2-active-action"
+            onClick={onOpen}
           >
-            Pick up
-          </button>
-        )}
-
-        {role === "rider" && order.status === "out_for_delivery" && isMine && (
-          <button className="primary-button" disabled={busy} onClick={onDeliver}>
-            Mark delivered
+            Active
           </button>
         )}
       </div>
     </article>
   );
 }
+
+function ClipboardIcon() {
+  return (
+    <svg
+      width="34"
+      height="34"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="5" y="4" width="14" height="17" rx="2" />
+      <path d="M9 4V2h6v2M9 9h6M9 13h6M9 17h4" />
+    </svg>
+  );
+              }
