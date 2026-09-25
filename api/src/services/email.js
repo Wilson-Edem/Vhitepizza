@@ -1,79 +1,117 @@
 const { db } = require("../config/firebase");
 const { sendBrevoEmail } = require("./brevo");
 
-async function sendEmail({ subject, message }) {
-  // Kept for the existing large-order alert flow.
-  const key = process.env.WEB3FORMS_KEY;
-
-  if (!key) {
-    console.warn("WEB3FORMS_KEY is not set; skipping Web3Forms email:", subject);
-    return;
-  }
-
-  try {
-    const response = await fetch("https://api.web3forms.com/submit", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-        Origin: "https://vhitepizza.web.app",
-        Referer: "https://vhitepizza.web.app/",
-      },
-      body: JSON.stringify({
-        access_key: key,
-        subject,
-        message,
-        from_name: "Vhitepizza",
-        botcheck: false,
-      }),
-    });
-
-    const responseText = await response.text();
-
-    if (!response.ok || responseText.trim().startsWith("<")) {
-      console.error(
-        "Web3Forms email failed:",
-        response.status,
-        responseText.slice(0, 300)
-      );
-      return;
-    }
-
-    console.log("Web3Forms email sent:", subject);
-  } catch (error) {
-    console.error("Web3Forms email failed:", error.message);
-  }
-}
-
-async function sendLargeOrderEmail(order) {
-  await sendEmail({
-    subject: `Large order needs approval — ${order.orderNumber}`,
-    message:
-      `A large order needs your confirmation.\n\n` +
-      `Order: ${order.orderNumber}\n` +
-      `Total: ₦${Number(order.pricing?.total || 0).toLocaleString("en-NG")}\n` +
-      `Customer: ${order.customer?.name || ""} (${order.customer?.phone || ""})\n\n` +
-      `Open the admin dashboard to approve or reject it.`,
-  });
-}
-
-const EMAIL_MOMENTS = new Set([
-  "confirmed",
-  "ready",
-  "out_for_delivery",
-  "delivered",
-]);
-
-function escapeHtml(value) {
-  return String(value ?? "")
+const escapeHtml = (value) =>
+  String(value ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+    .replaceAll("'", "&#39;");
+
+// ---------- Admin: large-order alert ----------
+
+const naira = (n) => `₦${Number(n || 0).toLocaleString("en-NG")}`;
+
+function buildLargeOrderEmail(order) {
+  const itemsHtml = (order.items || [])
+    .map(
+      (item) => `
+        <tr>
+          <td style="padding:6px 0;font-size:14px;color:#222;">
+            <strong>${escapeHtml(item.quantity)}× ${escapeHtml(item.name)}</strong>
+            ${item.sizeLabel ? `<span style="color:#888;"> (${escapeHtml(item.sizeLabel)})</span>` : ""}
+            ${
+              item.details?.length
+                ? `<div style="font-size:12px;color:#777;margin-top:2px;">${escapeHtml(item.details.join(" · "))}</div>`
+                : ""
+            }
+          </td>
+        </tr>`
+    )
+    .join("");
+
+  const mapsLink =
+    Number.isFinite(order.address?.lat) && Number.isFinite(order.address?.lng)
+      ? `https://www.google.com/maps?q=${order.address.lat},${order.address.lng}`
+      : null;
+
+  const htmlContent = `
+    <div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto;padding:20px;background:#0f0f10;color:#f5f5f5;border-radius:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h2 style="margin:0;font-size:20px;color:#fff;">${escapeHtml(order.orderNumber)}</h2>
+        <span style="background:#3a1a1a;color:#ff6b6b;padding:4px 10px;border-radius:20px;font-size:11px;letter-spacing:0.5px;">
+          ⚠ LARGE ORDER
+        </span>
+      </div>
+
+      <table style="width:100%;border-collapse:collapse;margin-bottom:14px;">
+        ${itemsHtml}
+      </table>
+
+      <div style="font-size:20px;font-weight:bold;color:#ff8c42;margin:14px 0;padding-top:10px;border-top:1px solid #2a2a2c;">
+        ${naira(order.pricing?.total)}
+      </div>
+
+      <div style="margin-bottom:10px;font-size:14px;color:#ddd;">
+        <strong style="color:#fff;">${escapeHtml(order.customer?.name || "Customer")}</strong>
+        ${
+          order.customer?.phone
+            ? ` · <a href="tel:${escapeHtml(order.customer.phone)}" style="color:#ff8c42;text-decoration:none;">${escapeHtml(order.customer.phone)}</a>`
+            : ""
+        }
+      </div>
+
+      <div style="font-size:13px;color:#aaa;line-height:1.5;margin-bottom:10px;">
+        ${escapeHtml(order.address?.formattedAddress || "")}
+        ${order.address?.landmark ? `<br>Near ${escapeHtml(order.address.landmark)}` : ""}
+      </div>
+
+      ${
+        mapsLink
+          ? `<a href="${mapsLink}" style="display:inline-block;color:#ff8c42;font-size:13px;text-decoration:none;margin-bottom:14px;">📍 Open in Maps</a>`
+          : ""
+      }
+
+      <div style="margin-top:16px;">
+        <a href="https://vhitepizza.web.app/staff/admin" style="display:inline-block;background:#ff6b35;color:#fff;padding:10px 18px;border-radius:8px;font-size:14px;text-decoration:none;font-weight:bold;">
+          Open Staff Dashboard
+        </a>
+      </div>
+    </div>
+  `;
+
+  const textContent =
+    `Large order needs approval — ${order.orderNumber}\n\n` +
+    `Total: ${naira(order.pricing?.total)}\n` +
+    `Customer: ${order.customer?.name || ""} (${order.customer?.phone || ""})\n\n` +
+    `Open the admin dashboard to approve or reject it.`;
+
+  return { subject: `Large order needs approval — ${order.orderNumber}`, htmlContent, textContent };
 }
+
+async function sendLargeOrderEmail(order) {
+  const to = process.env.ADMIN_ALERT_EMAIL || process.env.BREVO_SENDER_EMAIL;
+
+  if (!to) {
+    console.warn("ADMIN_ALERT_EMAIL / BREVO_SENDER_EMAIL not set; skipping large-order alert.");
+    return { skipped: true };
+  }
+
+  try {
+    const content = buildLargeOrderEmail(order);
+    const result = await sendBrevoEmail({ to: [{ email: to }], ...content });
+    console.log(`Brevo large-order alert sent for ${order.orderNumber}.`);
+    return result;
+  } catch (error) {
+    console.error(`Brevo large-order alert failed for ${order.orderNumber}:`, error.message);
+    return { failed: true, error: error.message };
+  }
+}
+
+// ---------- Customer: status update emails ----------
+
+const EMAIL_MOMENTS = new Set(["confirmed", "ready", "out_for_delivery", "delivered"]);
 
 function momentCopy(moment) {
   return {
@@ -88,10 +126,10 @@ function momentCopy(moment) {
       intro: "Your order is ready for delivery.",
     },
     out_for_delivery: {
-  subject: "Your Vhitepizza order is on the way",
-  title: "Out for delivery",
-  intro: "Your order has left the kitchen and is on its way to you.",
-},
+      subject: "Your Vhitepizza order is on the way",
+      title: "Out for delivery",
+      intro: "Your order has left the kitchen and is on its way to you.",
+    },
     delivered: {
       subject: "Your Vhitepizza order has been delivered",
       title: "Order delivered",
@@ -105,19 +143,14 @@ function orderItemsHtml(order) {
     .map(
       (item) => `
         <tr>
-          <td style="padding:8px 0;border-bottom:1px solid #eee;">
+          <td style="padding:6px 0;font-size:14px;color:#222;">
             ${escapeHtml(item.quantity)} × ${escapeHtml(item.name)}
-            ${
-              item.sizeLabel
-                ? `<div style="font-size:12px;color:#777;">${escapeHtml(item.sizeLabel)}</div>`
-                : ""
-            }
+            ${item.sizeLabel ? `<span style="color:#888;"> (${escapeHtml(item.sizeLabel)})</span>` : ""}
           </td>
-          <td style="padding:8px 0;border-bottom:1px solid #eee;text-align:right;">
+          <td style="padding:6px 0;text-align:right;color:#222;">
             ₦${Number(item.lineTotal || 0).toLocaleString("en-NG")}
           </td>
-        </tr>
-      `
+        </tr>`
     )
     .join("");
 }
@@ -131,32 +164,18 @@ function buildOrderEmail(order, moment) {
   const items = orderItemsHtml(order);
 
   const htmlContent = `
-    <div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;color:#171717;">
-      <div style="background:#111;padding:24px;border-radius:14px 14px 0 0;">
-        <h1 style="margin:0;color:#ff5e00;font-size:26px;">Vhitepizza</h1>
-      </div>
-      <div style="padding:28px;border:1px solid #eee;border-top:0;border-radius:0 0 14px 14px;">
-        <p style="font-size:14px;color:#666;margin:0 0 8px;">Hi ${escapeHtml(customerName)},</p>
-        <h2 style="margin:0 0 10px;">${escapeHtml(copy.title)}</h2>
-        <p style="line-height:1.6;">${escapeHtml(copy.intro)}</p>
-
-        <div style="background:#f7f7f7;border-radius:10px;padding:16px;margin:22px 0;">
-          <strong>Order ${escapeHtml(orderNumber)}</strong>
-          <div style="margin-top:8px;color:#555;">Delivery: ${escapeHtml(address)}</div>
-        </div>
-
-        <table style="width:100%;border-collapse:collapse;margin:18px 0;">
-          ${items}
-          <tr>
-            <td style="padding:12px 0;font-weight:bold;">Total</td>
-            <td style="padding:12px 0;text-align:right;font-weight:bold;">₦${total}</td>
-          </tr>
-        </table>
-
-        <p style="font-size:13px;color:#777;margin-top:24px;">
-          This is an automated Vhitepizza order update. Please keep this email for your records.
-        </p>
-      </div>
+    <div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto;padding:20px;background:#fff;color:#222;border-radius:12px;">
+      <h1 style="color:#ff6b35;font-size:22px;margin:0 0 20px;">Vhitepizza</h1>
+      <p>Hi ${escapeHtml(customerName)},</p>
+      <h2 style="font-size:18px;">${escapeHtml(copy.title)}</h2>
+      <p>${escapeHtml(copy.intro)}</p>
+      <p><strong>Order ${escapeHtml(orderNumber)}</strong></p>
+      <p>Delivery: ${escapeHtml(address)}</p>
+      <table style="width:100%;border-collapse:collapse;margin:12px 0;">
+        ${items}
+      </table>
+      <p style="font-size:16px;"><strong>Total: ₦${total}</strong></p>
+      <p style="font-size:12px;color:#888;margin-top:20px;">This is an automated Vhitepizza order update.</p>
     </div>
   `;
 
@@ -165,16 +184,10 @@ function buildOrderEmail(order, moment) {
     `${copy.title}\n${copy.intro}\n\n` +
     `Order: ${orderNumber}\n` +
     `Delivery: ${address}\n\n` +
-    `${(order.items || [])
-      .map(
-        (item) =>
-          `${item.quantity} x ${item.name} — ₦${Number(
-            item.lineTotal || 0
-          ).toLocaleString("en-NG")}`
-      )
-      .join("\n")}\n\n` +
-    `Total: ₦${total}\n\n` +
-    `— Vhitepizza`;
+    (order.items || [])
+      .map((item) => `${item.quantity} x ${item.name} — ₦${Number(item.lineTotal || 0).toLocaleString("en-NG")}`)
+      .join("\n") +
+    `\n\nTotal: ₦${total}\n\n— Vhitepizza`;
 
   return { subject: copy.subject, htmlContent, textContent };
 }
@@ -183,10 +196,9 @@ async function sendOrderEmail(order, moment) {
   if (!EMAIL_MOMENTS.has(moment)) return { skipped: true };
 
   const email = order.customer?.email;
+
   if (!email) {
-    console.warn(
-      `No customer email for ${order.orderNumber || order.id}; skipping ${moment} email.`
-    );
+    console.warn(`No customer email for ${order.orderNumber || order.id}; skipping ${moment} email.`);
     return { skipped: true };
   }
 
@@ -196,17 +208,10 @@ async function sendOrderEmail(order, moment) {
       to: [{ email, name: order.customer?.name || undefined }],
       ...content,
     });
-
-    console.log(
-      `Brevo ${moment} email sent for ${order.orderNumber || order.id}.`
-    );
+    console.log(`Brevo ${moment} email sent for ${order.orderNumber || order.id}.`);
     return result;
   } catch (error) {
-    // Email failure must never undo an already-completed order status change.
-    console.error(
-      `Brevo ${moment} email failed for ${order.orderNumber || order.id}:`,
-      error.message
-    );
+    console.error(`Brevo ${moment} email failed for ${order.orderNumber || order.id}:`, error.message);
     return { failed: true, error: error.message };
   }
 }
@@ -221,7 +226,6 @@ async function notifyOrderStatus(orderId, moment) {
 }
 
 module.exports = {
-  sendEmail,
   sendLargeOrderEmail,
   sendOrderEmail,
   notifyOrderStatus,
