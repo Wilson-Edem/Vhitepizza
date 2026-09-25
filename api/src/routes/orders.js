@@ -103,7 +103,7 @@ router.post("/:id/assign-rider", requireRole("admin"), async (req, res) => {
   res.json({ success: true, data: await assignRider(req.params.id, riderId) });
 });
 
-router.post("/:id/claim", requireRole("rider"), async (req, res) => {
+router.post("/:id/claim", requireRole("rider", "admin"), async (req, res) => {
   res.json({ success: true, data: await claimOrder(req.params.id, req.user.uid) });
 });
 

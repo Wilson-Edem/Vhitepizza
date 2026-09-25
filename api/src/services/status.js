@@ -16,12 +16,12 @@ const STATUS = {
 // "system" means the server itself (payment confirmed, timers).
 const TRANSITIONS = {
   awaiting_payment: {
-    placed: ["system"],
+    placed: ["system", "admin"],
     cancelled: ["customer", "admin", "system"],
   },
   placed: {
-    confirmed: ["system"],
-    pending_approval: ["system"],
+    confirmed: ["system", "admin"],
+    pending_approval: ["system", "admin"],
     cancelled: ["customer", "admin"],
   },
   pending_approval: {

@@ -140,7 +140,7 @@ function priceCart(menu, items, deliveryFee, options = {}) {
   const freeDeliveryApplies =
     options.freeDeliveryEnabled === true &&
     Number(options.freeDeliveryMin) > 0 &&
-    subtotal < Number(options.freeDeliveryMin);
+    subtotal >= Number(options.freeDeliveryMin);
 
   const appliedFee = freeDeliveryApplies ? 0 : fee;
 
