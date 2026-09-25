@@ -100,4 +100,41 @@ router.patch("/staff/:uid/active", async (req, res) => {
   res.json({ success: true, data: { uid: req.params.uid, active } });
 });
 
+// ---------- Settings ----------
+
+const settingsSchema = z.object({
+  isOpen: z.boolean().optional(),
+  flatDeliveryFee: z.number().int().min(0).optional(),
+  freeDeliveryEnabled: z.boolean().optional(),
+  freeDeliveryMin: z.number().int().min(0).optional(),
+});
+
+router.get("/settings", async (req, res) => {
+  if (!db) throw new HttpError(503, "Database is not available.");
+
+  const snap = await db.collection("settings").doc("public").get();
+  res.json({ success: true, data: snap.data() || {} });
+});
+
+router.patch("/settings", async (req, res) => {
+  if (!db) throw new HttpError(503, "Database is not available.");
+
+  const patch = parse(settingsSchema, req.body);
+
+  if (Object.keys(patch).length === 0) {
+    throw new HttpError(400, "Nothing to update.");
+  }
+
+  const ref = db.collection("settings").doc("public");
+  const snap = await ref.get();
+
+  if (!snap.exists) {
+    await ref.set(patch);
+  } else {
+    await ref.update(patch);
+  }
+
+  res.json({ success: true, data: patch });
+});
+
 module.exports = router;
