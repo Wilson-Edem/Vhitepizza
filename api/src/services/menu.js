@@ -44,16 +44,23 @@ async function loadFromFirestore() {
 
   if (!products.length) return null;
 
-  return {
-    sizes: settings.data()?.sizes || DEFAULT_SIZES,
-    categories: clean(categories),
-    products: clean(products),
-    options: {
-      crusts: clean(crusts),
-      cheeses: clean(cheeses),
-      toppings: clean(toppings),
-    },
-  };
+  const shared = settings.data() || {};
+
+return {
+  sizes: shared.sizes || DEFAULT_SIZES,
+  categories: clean(categories),
+  products: clean(products),
+  options: {
+    crusts: clean(crusts),
+    cheeses: clean(cheeses),
+    toppings: clean(toppings),
+  },
+  settings: {
+    flatDeliveryFee: Number(shared.flatDeliveryFee ?? 1500),
+    freeDeliveryEnabled: shared.freeDeliveryEnabled !== false,
+    freeDeliveryMin: Number(shared.freeDeliveryMin ?? 2000),
+  },
+};
 }
 
 // Returns { data, source } where source is "firestore" or "file".
