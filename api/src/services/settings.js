@@ -13,6 +13,8 @@ async function getSettings() {
     isOpen: true,
     flatDeliveryFee: 1500,
     cancelGraceMinutes: 3,
+    freeDeliveryEnabled: true,
+freeDeliveryMin: 2000,
     maxDist: 0, // 0 means no delivery distance limit
     restaurantLocation: null,
     // If settings/private has never been created, large-order approval is
@@ -34,6 +36,8 @@ async function getSettings() {
 
   settings.isOpen = shared.isOpen !== false;
   settings.flatDeliveryFee = number(shared.flatDeliveryFee, 1500);
+  settings.freeDeliveryEnabled = shared.freeDeliveryEnabled !== false;
+settings.freeDeliveryMin = number(shared.freeDeliveryMin, 2000);
   settings.cancelGraceMinutes = number(shared.cancelGraceMinutes, 3);
   settings.maxDist = number(shared.maxDist, 0);
 
