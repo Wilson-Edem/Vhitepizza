@@ -282,8 +282,10 @@ async function changeStatus(orderId, to, actor, reason = "") {
     await notifyOrderStatus(orderId, "confirmed");
   } else if (to === STATUS.READY) {
     await notifyOrderStatus(orderId, "ready");
-  } else if (to === STATUS.DELIVERED) {
-    await notifyOrderStatus(orderId, "delivered");
+} else if (to === STATUS.OUT_FOR_DELIVERY) {
+  await notifyOrderStatus(orderId, "out_for_delivery");
+} else if (to === STATUS.DELIVERED) {
+  await notifyOrderStatus(orderId, "delivered");
   }
 
   return result;
