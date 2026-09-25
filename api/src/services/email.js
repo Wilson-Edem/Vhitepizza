@@ -59,7 +59,12 @@ async function sendLargeOrderEmail(order) {
   });
 }
 
-const EMAIL_MOMENTS = new Set(["confirmed", "ready", "delivered"]);
+const EMAIL_MOMENTS = new Set([
+  "confirmed",
+  "ready",
+  "out_for_delivery",
+  "delivered",
+]);
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -82,6 +87,11 @@ function momentCopy(moment) {
       title: "Your order is ready",
       intro: "Your order is ready for delivery.",
     },
+    out_for_delivery: {
+  subject: "Your Vhitepizza order is on the way",
+  title: "Out for delivery",
+  intro: "Your order has left the kitchen and is on its way to you.",
+},
     delivered: {
       subject: "Your Vhitepizza order has been delivered",
       title: "Order delivered",
