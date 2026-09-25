@@ -61,7 +61,10 @@ async function createOrder({ user, items, address }) {
   if (!settings.isOpen)
     throw new HttpError(409, "The restaurant is closed right now.");
 
-  const priced = priceCart(menu, items, settings.flatDeliveryFee);
+  const priced = priceCart(menu, items, settings.flatDeliveryFee, {
+  freeDeliveryEnabled: settings.freeDeliveryEnabled,
+  freeDeliveryMin: settings.freeDeliveryMin,
+});
   checkDistance(address, settings);
 
   const itemCount = priced.lines.reduce(
