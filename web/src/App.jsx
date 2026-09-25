@@ -230,7 +230,7 @@ const getIncluded = (product, options) => {
 
 function App() {
   const { user, profile, role, isStaff, logout, loading: authLoading } = useAuth();
-
+ const [freeDelivery, setFreeDelivery] = useState({ enabled: true, min: 2000 });
   const [menu, setMenu] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -318,10 +318,14 @@ function App() {
         return response.json();
       })
       .then((result) => {
-        const menuData = result?.data ?? result;
-        setMenu(menuData);
-        setDeliveryFee(Number(menuData?.settings?.flatDeliveryFee ?? 0));
-      })
+  const menuData = result?.data ?? result;
+  setMenu(menuData);
+  setDeliveryFee(Number(menuData?.settings?.flatDeliveryFee ?? 0));
+  setFreeDelivery({
+    enabled: menuData?.settings?.freeDeliveryEnabled !== false,
+    min: Number(menuData?.settings?.freeDeliveryMin ?? 2000),
+  });
+})
       .catch((err) => {
         if (err.name === "AbortError") return;
         console.error(err);
