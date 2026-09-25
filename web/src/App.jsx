@@ -423,7 +423,14 @@ useEffect(() => {
     0
   );
 
-  const total = subtotal + deliveryFee;
+  const freeDeliveryApplies =
+  freeDelivery.enabled &&
+  freeDelivery.min > 0 &&
+  subtotal < freeDelivery.min;
+
+const effectiveDeliveryFee = freeDeliveryApplies ? 0 : deliveryFee;
+
+const total = subtotal + effectiveDeliveryFee;
 
   const navigate = (next, orderId) => {
   if (next === "staff" && !isStaff) {
