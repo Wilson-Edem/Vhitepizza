@@ -31,9 +31,10 @@ const STEPS = [
 ];
 
 export default function CheckoutView({
-  user,
   cart,
+  user,
   deliveryAddress,
+  deliveryFee = 0,
   onPickAddress,
   onBack,
   onToast,
