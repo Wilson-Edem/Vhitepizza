@@ -660,16 +660,17 @@ const total = subtotal + effectiveDeliveryFee;
           />
         )}
 
-        {screen === "checkout" && (
-          <CheckoutView
-            cart={cart}
-            user={user}
-            deliveryAddress={checkoutAddress}
-            onPickAddress={() => setPickerOpen(true)}
-            onBack={() => setScreen("cart")}
-            onToast={setToast}
-          />
-        )}
+       {screen === "checkout" && (
+  <CheckoutView
+    cart={cart}
+    user={user}
+    deliveryAddress={checkoutAddress}
+    deliveryFee={effectiveDeliveryFee}
+    onPickAddress={() => setPickerOpen(true)}
+    onBack={() => setScreen("cart")}
+    onToast={setToast}
+  />
+)} 
 
         {screen === "payment-return" && !authLoading && (
           <PaymentReturnView
