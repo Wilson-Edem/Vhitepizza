@@ -15,8 +15,7 @@ const staffSchema = z.object({
   role: z.enum(["admin", "kitchen", "rider", "customer"]),
 });
 
-// Turns a menu item's "sold out" state on or off. Products are cached on the
-// server for a minute, so the change can take up to that long to show.
+// Turns a menu item's "sold out" state on or off.
 router.patch("/products/:id", async (req, res) => {
   if (!db) throw new HttpError(503, "Database is not available.");
 
@@ -30,8 +29,7 @@ router.patch("/products/:id", async (req, res) => {
   res.json({ success: true, data: { id: req.params.id, available } });
 });
 
-// Every account, for the admin Users screen (tabs by role). Optional
-// ?role=admin|kitchen|rider|customer to filter server-side.
+// Every account, for the admin Users screen.
 router.get("/users", async (req, res) => {
   if (!db) throw new HttpError(503, "Database is not available.");
 
@@ -50,7 +48,7 @@ router.get("/users", async (req, res) => {
   });
 });
 
-// Lists everyone with a staff role, for the Staff Accounts screen.
+// Lists everyone with a staff role.
 router.get("/staff", async (req, res) => {
   if (!db) throw new HttpError(503, "Database is not available.");
 
@@ -65,7 +63,7 @@ router.get("/staff", async (req, res) => {
   });
 });
 
-// Gives an existing account (they must have signed up already) a staff role.
+// Gives an existing account a staff role.
 router.post("/staff", async (req, res) => {
   if (!db || !auth) throw new HttpError(503, "Database is not available.");
 
@@ -86,6 +84,22 @@ router.post("/staff", async (req, res) => {
 });
 
 router.patch("/staff/:uid/active", async (req, res) => {
+  if (!db) throw new HttpError(503, "Database is not available.");
+
+  const { available: active } = parse(availabilitySchema, {
+    available: req.body?.active,
+  });
+
+  await db
+    .collection("users")
+    .doc(req.params.uid)
+    .set({ active }, { merge: true });
+
+  res.json({ success: true, data: { uid: req.params.uid, active } });
+});
+
+// Same as above, for the Users tab (covers every role).
+router.patch("/users/:uid/active", async (req, res) => {
   if (!db) throw new HttpError(503, "Database is not available.");
 
   const { available: active } = parse(availabilitySchema, {
