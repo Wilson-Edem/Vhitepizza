@@ -5,8 +5,7 @@ const { getMenu } = require("./menu");
 const { getSettings } = require("./settings");
 const { priceCart } = require("./pricing");
 const { STATUS, assertTransition, isTerminal } = require("./status");
-const { notifyOrderStatus } = require("./email");
-
+const { notifyOrderStatus, sendLargeOrderEmail } = require("./email");
 const SYSTEM = { uid: null, role: "system" };
 const STAFF_ROLES = ["admin", "kitchen", "rider"];
 const STAMPS = {
@@ -133,17 +132,36 @@ async function createOrder({ user, items, address }) {
     });
   });
 
-  return {
+  if (requiresApproval) {
+  sendLargeOrderEmail({
     id: orderRef.id,
     orderNumber,
-    status: STATUS.AWAITING_PAYMENT,
-    requiresApproval,
+    customer: {
+      name: profile.displayName || user.name || "",
+      phone: address.phone,
+      email: user.email || profile.email || "",
+    },
+    items: priced.lines,
+    address,
     pricing: {
       subtotal: priced.subtotal,
       deliveryFee: priced.deliveryFee,
       total: priced.total,
     },
-  };
+  }).catch(() => {});
+}
+
+return {
+  id: orderRef.id,
+  orderNumber,
+  status: STATUS.AWAITING_PAYMENT,
+  requiresApproval,
+  pricing: {
+    subtotal: priced.subtotal,
+    deliveryFee: priced.deliveryFee,
+    total: priced.total,
+  },
+};
 }
 
 async function markPaid(orderId, reference = "") {
