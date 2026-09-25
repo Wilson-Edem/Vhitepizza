@@ -416,3 +416,67 @@
     position: relative;
   }
 }
+
+.v2-settings-panel {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+}
+
+.v2-settings-panel h2 {
+  font-size: 20px;
+}
+
+.v2-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+}
+
+.v2-setting-row > div {
+  display: grid;
+  gap: 3px;
+}
+
+.v2-setting-row strong {
+  font-size: 13px;
+}
+
+.v2-setting-row small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.v2-setting-row input[type="number"] {
+  width: 130px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 13px;
+  text-align: right;
+}
+
+.v2-settings-panel .v2-primary-action {
+  width: max-content;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.v2-success {
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--success-soft);
+  color: var(--success);
+  font-size: 12px;
+}
