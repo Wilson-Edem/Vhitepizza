@@ -1,12 +1,5 @@
 const { HttpError } = require("../utils/errors");
 
-// Price rules (server is the only source of truth):
-//  base price for the size
-//  + crust extra price
-//  + (chosen cheese extra price - default cheese extra price)
-//  + price of every added topping
-//  - price of every removed default topping
-//  x quantity, then + the flat delivery fee.
 
 const MAX_QUANTITY = 20;
 
@@ -129,7 +122,7 @@ function priceLine(menu, maps, item) {
 // menu: { sizes, products, options: { crusts, cheeses, toppings } }
 // items: [{ productId, sizeId, quantity, crustId?, cheeseId?,
 //           extraToppingIds?, removedToppingIds? }]
-function priceCart(menu, items, deliveryFee) {
+function priceCart(menu, items, deliveryFee, options = {}) {
   if (!Array.isArray(items) || items.length === 0) fail("Your cart is empty.");
 
   const maps = {
@@ -141,9 +134,22 @@ function priceCart(menu, items, deliveryFee) {
 
   const lines = items.map((item) => priceLine(menu, maps, item));
   const subtotal = lines.reduce((sum, line) => sum + line.lineTotal, 0);
+
   const fee = toNumber(deliveryFee);
 
-  return { lines, subtotal, deliveryFee: fee, total: subtotal + fee };
-}
+  const freeDeliveryApplies =
+    options.freeDeliveryEnabled === true &&
+    Number(options.freeDeliveryMin) > 0 &&
+    subtotal < Number(options.freeDeliveryMin);
 
+  const appliedFee = freeDeliveryApplies ? 0 : fee;
+
+  return {
+    lines,
+    subtotal,
+    deliveryFee: appliedFee,
+    freeDelivery: freeDeliveryApplies,
+    total: subtotal + appliedFee,
+  };
+}
 module.exports = { priceCart, MAX_QUANTITY };
