@@ -5,6 +5,7 @@ import MenuAvailability from "./MenuAvailability";
 import StaffAccounts from "./StaffAccounts";
 import AdminUsers from "./AdminUsers";
 import RiderDeliveryMap from "./RiderDeliveryMap";
+import { apiFetch } from "../../lib/api";
 import "./staff.css";
 
 const ADMIN_NAV = [
@@ -168,7 +169,9 @@ useEffect(() => {
         {section === "menu" && role === "admin" && <MenuAvailability />}
         {section === "staff" && role === "admin" && <StaffAccounts />}
         {section === "users" && role === "admin" && <AdminUsers />}
-        {section === "settings" && role === "admin" && <AdminSettingsPlaceholder />}
+        {section === "settings" && role === "admin" && (
+  <AdminSettings />
+)}
       </section>
     </div>
   );
@@ -212,4 +215,105 @@ function ActiveOrderWorkspace({ order, role, uid, dark, onBack }) {
 }
 
 function AlertIcon() { return <span className="v2-problem-icon"><span>!</span></span>; }
-function AdminSettingsPlaceholder() { return <section className="v2-empty-panel"><Settings size={28} /><h2>Settings</h2><p>Existing restaurant settings remain available through the current backend configuration. V2 settings controls will be added in the operations phases.</p></section>; }
+function AdminSettings() {
+  const [settings, setSettings] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    apiFetch("/admin/settings")
+      .then(setSettings)
+      .catch((e) => setError(e.message));
+  }, []);
+
+  const update = (patch) =>
+    setSettings((current) => ({ ...current, ...patch }));
+
+  const save = async () => {
+    setSaving(true);
+    setError("");
+    setMessage("");
+    try {
+      await apiFetch("/admin/settings", {
+        method: "PATCH",
+        body: {
+          flatDeliveryFee: Number(settings.flatDeliveryFee || 0),
+          freeDeliveryEnabled: settings.freeDeliveryEnabled !== false,
+          freeDeliveryMin: Number(settings.freeDeliveryMin || 0),
+        },
+      });
+      setMessage("Saved.");
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!settings) {
+    return (
+      <section className="v2-empty-panel">
+        <p>Loading settings...</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="v2-settings-panel">
+      <h2>Delivery settings</h2>
+
+      {error && <div className="v2-error">{error}</div>}
+      {message && <div className="v2-success">{message}</div>}
+
+      <div className="v2-setting-row">
+        <div>
+          <strong>Flat delivery fee</strong>
+          <small>₦ — charged for orders above the free-delivery threshold</small>
+        </div>
+        <input
+          type="number"
+          min="0"
+          value={settings.flatDeliveryFee || 0}
+          onChange={(e) => update({ flatDeliveryFee: e.target.value })}
+        />
+      </div>
+
+      <div className="v2-setting-row">
+        <div>
+          <strong>Free delivery threshold</strong>
+          <small>Orders below this subtotal pay no delivery fee</small>
+        </div>
+        <input
+          type="number"
+          min="0"
+          value={settings.freeDeliveryMin || 0}
+          onChange={(e) => update({ freeDeliveryMin: e.target.value })}
+        />
+      </div>
+
+      <div className="v2-setting-row">
+        <div>
+          <strong>Enable free delivery rule</strong>
+          <small>When off, every order pays the flat delivery fee</small>
+        </div>
+        <label className="staff-switch">
+          <input
+            type="checkbox"
+            checked={settings.freeDeliveryEnabled !== false}
+            onChange={(e) => update({ freeDeliveryEnabled: e.target.checked })}
+          />
+          <span />
+        </label>
+      </div>
+
+      <button
+        className="v2-primary-action"
+        onClick={save}
+        disabled={saving}
+      >
+        {saving ? "Saving..." : "Save settings"}
+      </button>
+    </section>
+  );
+}
