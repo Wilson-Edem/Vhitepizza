@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ArrowLeft, Clock3, MapPin, PackageCheck, RefreshCw, XCircle } from "lucide-react";
 import { apiFetch } from "../../lib/api";
+import CustomerDeliveryMap from "./CustomerDeliveryMap";
 import "./order.css";
 
 const formatMoney = (value) => `₦${Number(value || 0).toLocaleString("en-NG")}`;
@@ -17,21 +18,8 @@ const STATUS_LABELS = {
   cancelled: "Cancelled",
 };
 
-const TRACKING_STATUSES = [
-  "placed",
-  "confirmed",
-  "preparing",
-  "ready",
-  "out_for_delivery",
-  "delivered",
-];
-
-const CANCELLABLE = new Set([
-  "awaiting_payment",
-  "placed",
-  "pending_approval",
-  "confirmed",
-]);
+const TRACKING_STATUSES = ["placed", "confirmed", "preparing", "ready", "out_for_delivery", "delivered"];
+const CANCELLABLE = new Set(["awaiting_payment", "placed", "pending_approval", "confirmed"]);
 
 const formatDate = (value) => {
   if (!value) return "Date unavailable";
@@ -77,18 +65,15 @@ export default function OrdersView({ user, onToast, onSignIn, initialOrderId, on
 
   useEffect(() => { loadOrders(); }, [loadOrders]);
 
-  // Arriving here with a specific order in mind (for example, straight
-  // from Paystack) opens that order's detail right away instead of the
-  // list. Runs once per id, then tells the parent it's been used so
-  // navigating back to Orders later shows the list again.
   useEffect(() => {
     if (!initialOrderId) return;
-
     loadDetail(initialOrderId);
     onConsumedInitial?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialOrderId]);
 
+  // Keep an active order fresh so the customer sees the rider location that
+  // the rider publishes from the active-delivery screen.
   useEffect(() => {
     if (!selectedId) return undefined;
     const timer = setInterval(() => loadDetail(selectedId), 15000);
@@ -141,7 +126,6 @@ export default function OrdersView({ user, onToast, onSignIn, initialOrderId, on
     }
 
     const activeIndex = Math.max(0, TRACKING_STATUSES.indexOf(status));
-
     return (
       <div className="order-tracker">
         {TRACKING_STATUSES.map((item, index) => (
@@ -158,6 +142,9 @@ export default function OrdersView({ user, onToast, onSignIn, initialOrderId, on
   };
 
   if (selectedId) {
+    const rider = selected?.delivery?.riderLocation || null;
+    const isDelivery = selected?.status === "out_for_delivery";
+
     return (
       <div className="page-content orders-page">
         <div className="page-header">
@@ -175,14 +162,26 @@ export default function OrdersView({ user, onToast, onSignIn, initialOrderId, on
                 <div><span>{formatDate(selected.createdAt)}</span><h3>{statusText(selected.status)}</h3></div>
                 <strong>{formatMoney(selected.pricing?.total)}</strong>
               </div>
-
               {tracking(selected.status)}
-
               <div className="order-address">
                 <MapPin size={18} />
                 <div><strong>Delivery address</strong><p>{selected.address?.formattedAddress}</p></div>
               </div>
             </section>
+
+            {isDelivery && (
+              <section className="order-detail-card customer-tracking-card">
+                <div className="order-tracking-heading">
+                  <div><span>LIVE DELIVERY</span><h3>Track your rider</h3></div>
+                  <small>{rider ? "Location updates automatically" : "Waiting for rider location"}</small>
+                </div>
+                <CustomerDeliveryMap
+                  dark={false}
+                  customer={selected.address}
+                  rider={rider}
+                />
+              </section>
+            )}
 
             <section className="order-detail-card">
               <h3>Items</h3>
@@ -208,13 +207,13 @@ export default function OrdersView({ user, onToast, onSignIn, initialOrderId, on
               <h3>Payment</h3>
               <div className="payment-status-row"><span>Status</span><strong>{selected.payment?.status || "pending"}</strong></div>
               {selected.payment?.reference && <div className="payment-status-row"><span>Reference</span><strong>{selected.payment.reference}</strong></div>}
-              {selected.payment?.status === "refund_pending" && <p className="refund-note">A refund is pending manual completion by the restaurant.</p>}
+              {selected.payment?.status === "refund_pending" && <p className="refund-note">A refund is pending completion by the restaurant.</p>}
             </section>
 
             {CANCELLABLE.has(selected.status) && (
               <section className="order-detail-card cancel-card">
                 <h3>Cancel order</h3>
-                <p>Cancellation is available until the order starts preparing. Paid cancellations go to the existing manual refund workflow.</p>
+                <p>Cancellation is available until the order starts preparing.</p>
                 <textarea value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Reason (optional)" rows={3} />
                 <button className="danger-button" disabled={cancelling} onClick={cancelOrder}>
                   <XCircle size={17} /> {cancelling ? "Cancelling…" : "Cancel Order"}

@@ -505,6 +505,43 @@ async function findOrderIdByPaymentReference(reference) {
 
   return snapshot.empty ? null : snapshot.docs[0].id;
 }
+/* ---------- rider location ---------- */
+
+async function updateRiderLocation(orderId, riderUid, location) {
+  requireDb();
+
+  const ref = db.collection("orders").doc(orderId);
+  const snap = await ref.get();
+
+  if (!snap.exists) throw new HttpError(404, "Order not found.");
+
+  const order = snap.data();
+
+  if (order.riderId !== riderUid) {
+    throw new HttpError(403, "You are not assigned to this delivery.");
+  }
+
+  if (order.status !== STATUS.OUT_FOR_DELIVERY) {
+    throw new HttpError(409, "Rider location can only be updated during delivery.");
+  }
+
+  const lat = Number(location.lat);
+  const lng = Number(location.lng);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    throw new HttpError(400, "Invalid rider location.");
+  }
+
+  await ref.update({
+    "delivery.riderLocation": {
+      lat,
+      lng,
+      updatedAt: FieldValue.serverTimestamp(),
+    },
+  });
+
+  return { id: orderId, riderLocation: { lat, lng } };
+}
 
 module.exports = {
   SYSTEM,
@@ -520,4 +557,5 @@ module.exports = {
   getOrder,
   setPaymentReference,
   findOrderIdByPaymentReference,
+    updateRiderLocation,
 };

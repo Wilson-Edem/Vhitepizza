@@ -13,6 +13,7 @@ const {
   listMine,
   getOrder,
   setPaymentReference,
+    updateRiderLocation,
 } = require("../services/orders");
 const { initiateRefund } = require("../services/refunds");
 const { initializeTransaction, verifyTransaction, CURRENCY } = require("../services/payments/paystack");
@@ -105,6 +106,18 @@ router.post("/:id/assign-rider", requireRole("admin"), async (req, res) => {
 
 router.post("/:id/claim", requireRole("rider", "admin"), async (req, res) => {
   res.json({ success: true, data: await claimOrder(req.params.id, req.user.uid) });
+});
+
+router.patch("/:id/location", requireRole("rider"), async (req, res) => {
+  const location = parse(schemas.location, req.body);
+
+  const result = await updateRiderLocation(
+    req.params.id,
+    req.user.uid,
+    location
+  );
+
+  res.json({ success: true, data: result });
 });
 
 router.post("/:id/problem", requireRole("admin", "kitchen", "rider"), async (req, res) => {

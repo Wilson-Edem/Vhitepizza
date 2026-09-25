@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MapContainer, Marker, Polyline, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
 import { Navigation } from "lucide-react";
 import "leaflet/dist/leaflet.css";
-import { tileUrl } from "../location/geoapify";
+import { routeDriving, tileUrl } from "../location/geoapify";
+import { apiFetch } from "../../lib/api";
 import "./staff.css";
 
 const RIDER_ICON = L.divIcon({
@@ -20,38 +21,26 @@ const CUSTOMER_ICON = L.divIcon({
   iconAnchor: [15, 40],
 });
 
-const EARTH_RADIUS_KM = 6371;
-const toRad = (deg) => (deg * Math.PI) / 180;
-
-// Straight-line distance in kilometres between two points.
-function distanceKm(a, b) {
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const x =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
-
-  return 2 * EARTH_RADIUS_KM * Math.asin(Math.sqrt(x));
-}
+const isPoint = (point) =>
+  Number.isFinite(Number(point?.lat)) && Number.isFinite(Number(point?.lng));
 
 function FitBounds({ points }) {
   const map = useMap();
 
   useEffect(() => {
     if (points.length < 2) return;
-
     map.fitBounds(points, { padding: [30, 30], maxZoom: 16 });
   }, [points, map]);
 
   return null;
 }
 
-// Shown once a rider has claimed an order. Watches the rider's live
-// position and draws a line to the customer's delivery pin, with the
-// straight-line distance between them.
-export default function RiderDeliveryMap({ dark, customer }) {
+export default function RiderDeliveryMap({ dark, customer, orderId }) {
   const [rider, setRider] = useState(null);
+  const [route, setRoute] = useState(null);
   const [error, setError] = useState("");
+  const [locationSaving, setLocationSaving] = useState(false);
+  const lastSentAt = useRef(0);
 
   useEffect(() => {
     if (!navigator.geolocation) {
@@ -60,19 +49,87 @@ export default function RiderDeliveryMap({ dark, customer }) {
     }
 
     const watchId = navigator.geolocation.watchPosition(
-      (position) =>
+      (position) => {
         setRider({
           lat: position.coords.latitude,
           lng: position.coords.longitude,
-        }),
-      () => setError("Turn on location access to see the route."),
-      { enableHighAccuracy: true, maximumAge: 5000 }
+        });
+        setError("");
+      },
+      () => setError("Turn on location access to see the road route."),
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
     );
 
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
-  const hasCustomer = Number.isFinite(customer?.lat) && Number.isFinite(customer?.lng);
+  // Share the rider's latest position with the order so the customer can
+  // see it on their own tracking screen. Updates are throttled to avoid
+  // writing on every browser GPS event.
+  useEffect(() => {
+    if (!rider || !orderId) return undefined;
+
+    const now = Date.now();
+    if (now - lastSentAt.current < 10000) return undefined;
+
+    let cancelled = false;
+    setLocationSaving(true);
+
+    apiFetch(`/orders/${encodeURIComponent(orderId)}/location`, {
+      method: "PATCH",
+      body: { lat: rider.lat, lng: rider.lng },
+    })
+      .catch((err) => {
+        if (!cancelled) console.warn("Rider location update failed:", err.message);
+      })
+      .finally(() => {
+        if (!cancelled) {
+          lastSentAt.current = Date.now();
+          setLocationSaving(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [rider, orderId]);
+
+  // Routing is deliberately polled, rather than recalculated for every GPS
+  // update, because Routing API calls consume more Geoapify quota than map tiles.
+  useEffect(() => {
+    if (!isPoint(rider) || !isPoint(customer)) return undefined;
+
+    let cancelled = false;
+    let controller = new AbortController();
+
+    const refresh = async () => {
+      controller.abort();
+      controller = new AbortController();
+
+      try {
+        const next = await routeDriving(rider, customer, controller.signal);
+        if (!cancelled) {
+          setRoute(next);
+          setError("");
+        }
+      } catch (err) {
+        if (!cancelled && err.name !== "AbortError") {
+          setError(err.message || "Road route unavailable. Showing direct distance.");
+        }
+      }
+    };
+
+    refresh();
+    const timer = window.setInterval(refresh, 20000);
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+      window.clearInterval(timer);
+    };
+  }, [rider?.lat, rider?.lng, customer?.lat, customer?.lng]);
+
+  const hasCustomer = isPoint(customer);
 
   if (!hasCustomer) {
     return (
@@ -83,11 +140,21 @@ export default function RiderDeliveryMap({ dark, customer }) {
   }
 
   const points = rider ? [rider, customer] : [customer];
+  const fallbackLine = rider
+    ? [
+        [rider.lat, rider.lng],
+        [customer.lat, customer.lng],
+      ]
+    : [];
 
   return (
     <div className="rider-map-block">
       <div className="rider-map">
-        <MapContainer center={[customer.lat, customer.lng]} zoom={14} scrollWheelZoom={false}>
+        <MapContainer
+          center={[customer.lat, customer.lng]}
+          zoom={14}
+          scrollWheelZoom={false}
+        >
           <TileLayer
             key={dark ? "dark" : "light"}
             url={tileUrl(dark)}
@@ -96,30 +163,41 @@ export default function RiderDeliveryMap({ dark, customer }) {
           />
 
           <FitBounds points={points.map((p) => [p.lat, p.lng])} />
-
           <Marker position={[customer.lat, customer.lng]} icon={CUSTOMER_ICON} />
 
           {rider && (
-            <>
-              <Marker position={[rider.lat, rider.lng]} icon={RIDER_ICON} />
-              <Polyline
-                positions={[
-                  [rider.lat, rider.lng],
-                  [customer.lat, customer.lng],
-                ]}
-                pathOptions={{ color: "#cc4a1c", weight: 3, dashArray: "6 8" }}
-              />
-            </>
+            <Marker position={[rider.lat, rider.lng]} icon={RIDER_ICON} />
+          )}
+
+          {(route?.geometry?.length > 1 || fallbackLine.length > 1) && (
+            <Polyline
+              positions={route?.geometry?.length > 1 ? route.geometry : fallbackLine}
+              pathOptions={{
+                color: "#cc4a1c",
+                weight: 4,
+                opacity: route?.geometry?.length > 1 ? 0.9 : 0.55,
+                dashArray: route?.geometry?.length > 1 ? undefined : "6 8",
+              }}
+            />
           )}
         </MapContainer>
       </div>
 
       <div className="rider-distance">
         <Navigation size={14} />
-        {rider
-          ? `${distanceKm(rider, customer).toFixed(1)} km to the customer (straight line)`
-          : error || "Finding your location..."}
+        {route ? (
+          <>
+            {route.distanceKm.toFixed(1)} km · about {Math.max(1, Math.round(route.durationMinutes))} min
+            {locationSaving ? " · updating location" : ""}
+          </>
+        ) : rider ? (
+          "Calculating road distance..."
+        ) : (
+          error || "Finding your location..."
+        )}
       </div>
+
+      {error && route && <div className="rider-route-note">{error}</div>}
     </div>
   );
 }

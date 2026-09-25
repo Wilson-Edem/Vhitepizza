@@ -38,6 +38,10 @@ const schemas = {
   problem: z.object({
     reason: z.string().trim().min(3).max(500),
   }),
+  location: z.object({
+    lat: z.number().min(-90).max(90),
+    lng: z.number().min(-180).max(180),
+  }),
 };
 
 function parse(schema, body) {

@@ -59,3 +59,11 @@
 .order-state { display:grid; justify-items:center; gap:10px; padding:56px 20px; color:var(--muted); text-align:center; }
 .order-state .primary-button { width:auto; }
 @media (max-width:640px) { .orders-heading-row { flex-direction:column; align-items:stretch; } .orders-heading-row > button { align-self:flex-start; } .order-detail-top { display:grid; } .order-list-card { align-items:flex-start; } }
+/* Phase 5 — customer rider tracking */
+.customer-tracking-card{display:grid;gap:14px}
+.order-tracking-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.order-tracking-heading>div{display:grid;gap:4px}
+.order-tracking-heading span{color:var(--muted);font-size:9px;font-weight:800;letter-spacing:.09em}
+.order-tracking-heading h3{font-size:17px}
+.order-tracking-heading small{color:var(--muted);font-size:10px;text-align:right}
+.rider-route-note{padding:8px 10px;border-radius:9px;background:var(--surface-2);color:var(--muted);font-size:10px}

@@ -202,7 +202,11 @@ function ActiveOrderWorkspace({ order, role, uid, dark, onBack }) {
           {items.map((item, index) => <div className="v2-active-item" key={`${item.productId || item.name}-${index}`}><div><strong>{item.quantity} × {item.name}</strong><span>{item.sizeLabel || "Standard"}</span>{item.details?.length > 0 && <small>{item.details.join(" · ")}</small>}{item.note && <small>Note: {item.note}</small>}</div><strong>{`₦${Number(item.lineTotal || 0).toLocaleString("en-NG")}`}</strong></div>)}
         </div></div>
 
-        {isRider && <div className="v2-active-panel"><div className="v2-panel-heading"><div><span>LIVE DELIVERY</span><h3>Rider route</h3></div></div><RiderDeliveryMap dark={dark} customer={order.address} /></div>}
+        {isRider && <div className="v2-active-panel"><div className="v2-panel-heading"><div><span>LIVE DELIVERY</span><h3>Rider route</h3></div></div><RiderDeliveryMap
+  dark={false}
+  customer={order.address}
+  orderId={order.id}
+/></div>}
       </div>
 
       <div className="v2-active-side">
