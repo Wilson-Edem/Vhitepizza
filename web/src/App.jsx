@@ -550,15 +550,15 @@ const total = subtotal + effectiveDeliveryFee;
   };
 
   const cartProps = {
-    cart,
-    subtotal,
-    deliveryFee,
-    total,
-    updateQuantity,
-    removeFromCart,
-    clearCart,
-    onCheckout: () => setScreen("checkout"),
-  };
+  cart,
+  subtotal,
+  deliveryFee: effectiveDeliveryFee,
+  total,
+  updateQuantity,
+  removeFromCart,
+  clearCart,
+  onCheckout: () => setScreen("checkout"),
+};
 
   const menuProps = {
     products: filteredProducts,
