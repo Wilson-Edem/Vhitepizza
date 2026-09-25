@@ -29,7 +29,7 @@ const TRANSITIONS = {
     cancelled: ["customer", "admin"],
   },
   confirmed: {
-    preparing: ["system", "admin"],
+    preparing: ["system", "admin", "kitchen"],
     cancelled: ["customer", "admin"],
   },
   preparing: {
