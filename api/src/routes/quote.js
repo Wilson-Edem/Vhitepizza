@@ -19,7 +19,10 @@ router.post("/", verifyToken, async (req, res) => {
 
   res.json({
     success: true,
-    data: priceCart(menu, items, settings.flatDeliveryFee),
+    data: priceCart(menu, items, settings.flatDeliveryFee, {
+      freeDeliveryEnabled: settings.freeDeliveryEnabled,
+      freeDeliveryMin: settings.freeDeliveryMin,
+    }),
   });
 });
 
