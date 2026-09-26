@@ -480,3 +480,37 @@
   color: var(--success);
   font-size: 12px;
 }
+
+.v2-target-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: fit-content;
+  margin-top: 4px;
+  padding: 4px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.v2-target-state.target-soon {
+  background: rgba(245, 158, 11, .12);
+  color: #b45309;
+}
+
+.v2-target-state.target-late {
+  background: rgba(180, 35, 24, .12);
+  color: #b42318;
+}
+
+.urgency-late .v2-target-state {
+  font-weight: 900;
+}
+
+@media (max-width: 700px) {
+  .v2-target-state {
+    font-size: 9px;
+  }
+}

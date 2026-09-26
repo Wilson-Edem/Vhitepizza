@@ -28,7 +28,15 @@ const address = z.object({
 
 const schemas = {
   quote: z.object({ items }),
-  order: z.object({ items, address }),
+  order: z.object({
+    items,
+    address,
+    requestedByMinutes: z.union([
+      z.literal(30),
+      z.literal(45),
+      z.literal(60),
+    ]).nullable().optional().default(null),
+  }),
   status: z.object({
     status: z.enum(STATUSES),
     reason: z.string().trim().max(200).default(""),

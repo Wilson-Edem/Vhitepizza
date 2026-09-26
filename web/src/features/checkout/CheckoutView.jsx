@@ -23,6 +23,23 @@ const toOrderItem = (item) => ({
   removedToppingIds: item.removedToppingIds || [],
 });
 
+const getDeliveryTargets = (cart) => {
+  const itemCount = cart.reduce(
+    (sum, item) => sum + Number(item.quantity || 0),
+    0
+  );
+
+  if (itemCount <= 2) {
+    return [30, 45];
+  }
+
+  if (itemCount <= 5) {
+    return [45, 60];
+  }
+
+  return [60];
+};
+
 const STEPS = [
   ["address", "Address"],
   ["review", "Review"],
@@ -42,8 +59,22 @@ export default function CheckoutView({
   const [quote, setQuote] = useState(null);
   const [loadingQuote, setLoadingQuote] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [requestedByMinutes, setRequestedByMinutes] = useState(null);
 
   const cartItems = useMemo(() => cart.map(toOrderItem), [cart]);
+  const deliveryTargets = useMemo(
+    () => getDeliveryTargets(cart),
+    [cart]
+  );
+
+  useEffect(() => {
+    if (
+      requestedByMinutes !== null &&
+      !deliveryTargets.includes(requestedByMinutes)
+    ) {
+      setRequestedByMinutes(null);
+    }
+  }, [deliveryTargets, requestedByMinutes]);
 
   useEffect(() => {
     let active = true;
@@ -108,29 +139,28 @@ export default function CheckoutView({
         body: {
           items: cartItems,
           address: deliveryAddress,
+          requestedByMinutes,
         },
       });
 
-  
       const payment = await apiFetch(
         `/orders/${encodeURIComponent(order.id)}/payment/initialize`,
         { method: "POST" }
       );
 
-     if (!payment.authorizationUrl) {
-  throw new Error("Paystack did not return a checkout URL.");
-}
+      if (!payment.authorizationUrl) {
+        throw new Error("Paystack did not return a checkout URL.");
+      }
 
-localStorage.setItem(
-  "vhitepizza-pending-order-id",
-  order.id
-);
+      localStorage.setItem(
+        "vhitepizza-pending-order-id",
+        order.id
+      );
 
-localStorage.setItem(
-  "vhitepizza-pending-payment-reference",
-  payment.reference || ""
-);
-
+      localStorage.setItem(
+        "vhitepizza-pending-payment-reference",
+        payment.reference || ""
+      );
 
       window.location.assign(payment.authorizationUrl);
     } catch (error) {
@@ -166,7 +196,10 @@ localStorage.setItem(
     );
   }
 
-  const currentIndex = Math.max(0, STEPS.findIndex(([id]) => id === step));
+  const currentIndex = Math.max(
+    0,
+    STEPS.findIndex(([id]) => id === step)
+  );
 
   return (
     <div className="page-content checkout-page">
@@ -174,6 +207,7 @@ localStorage.setItem(
         <button className="checkout-back" onClick={onBack} aria-label="Back">
           <ArrowLeft size={20} />
         </button>
+
         <div>
           <span>CHECKOUT</span>
           <h2>Complete your order</h2>
@@ -184,11 +218,17 @@ localStorage.setItem(
         {STEPS.map(([id, label], index) => (
           <div
             className={`checkout-step ${
-              index < currentIndex ? "done" : index === currentIndex ? "active" : ""
+              index < currentIndex
+                ? "done"
+                : index === currentIndex
+                  ? "active"
+                  : ""
             }`}
             key={id}
           >
-            <span>{index < currentIndex ? <Check size={14} /> : index + 1}</span>
+            <span>
+              {index < currentIndex ? <Check size={14} /> : index + 1}
+            </span>
             <strong>{label}</strong>
           </div>
         ))}
@@ -208,8 +248,12 @@ localStorage.setItem(
             <div className="address-preview">
               <strong>{deliveryAddress.formattedAddress}</strong>
               <span>{deliveryAddress.phone}</span>
-              {deliveryAddress.landmark && <span>Landmark: {deliveryAddress.landmark}</span>}
-              {deliveryAddress.notes && <span>Notes: {deliveryAddress.notes}</span>}
+              {deliveryAddress.landmark && (
+                <span>Landmark: {deliveryAddress.landmark}</span>
+              )}
+              {deliveryAddress.notes && (
+                <span>Notes: {deliveryAddress.notes}</span>
+              )}
             </div>
           ) : (
             <div className="address-empty">
@@ -219,10 +263,15 @@ localStorage.setItem(
           )}
 
           <button className="secondary-button" onClick={onPickAddress}>
-            {deliveryAddress ? "Change Delivery Location" : "Choose Delivery Location"}
+            {deliveryAddress
+              ? "Change Delivery Location"
+              : "Choose Delivery Location"}
           </button>
 
-          <button className="primary-button" onClick={continueFromAddress}>
+          <button
+            className="primary-button"
+            onClick={continueFromAddress}
+          >
             Continue to Review
             <ArrowRight size={17} />
           </button>
@@ -243,27 +292,82 @@ localStorage.setItem(
             {cart.map((item) => (
               <div className="checkout-line" key={item.id}>
                 <div>
-                  <strong>{item.quantity} × {item.name}</strong>
+                  <strong>
+                    {item.quantity} × {item.name}
+                  </strong>
                   <small>
                     {item.sizeLabel}
-                    {item.details?.length ? ` · ${item.details.join(" · ")}` : ""}
+                    {item.details?.length
+                      ? ` · ${item.details.join(" · ")}`
+                      : ""}
                   </small>
                 </div>
-                <strong>{formatMoney((item.price || 0) * item.quantity)}</strong>
+                <strong>
+                  {formatMoney((item.price || 0) * item.quantity)}
+                </strong>
               </div>
             ))}
           </div>
 
+          <div className="delivery-target-card">
+            <div>
+              <span>DELIVERY TIME TARGET</span>
+              <h3>When would you like it?</h3>
+              <p>
+                This is a soft target for the restaurant team, not a
+                guaranteed SLA.
+              </p>
+            </div>
+
+            <div className="delivery-target-options">
+              <button
+                type="button"
+                className={requestedByMinutes === null ? "selected" : ""}
+                onClick={() => setRequestedByMinutes(null)}
+              >
+                <strong>No preference</strong>
+                <small>Let the kitchen prioritize it</small>
+              </button>
+
+              {deliveryTargets.map((minutes) => (
+                <button
+                  type="button"
+                  key={minutes}
+                  className={
+                    requestedByMinutes === minutes ? "selected" : ""
+                  }
+                  onClick={() => setRequestedByMinutes(minutes)}
+                >
+                  <strong>Within {minutes} min</strong>
+                  <small>Target only</small>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {loadingQuote ? (
-            <div className="quote-loading">Checking the server price…</div>
+            <div className="quote-loading">
+              Checking the server price…
+            </div>
           ) : quote ? (
             <div className="checkout-total-box">
-              <div><span>Subtotal</span><strong>{formatMoney(quote.subtotal)}</strong></div>
-              <div><span>Delivery fee</span><strong>{formatMoney(quote.deliveryFee)}</strong></div>
-              <div className="grand"><span>Total</span><strong>{formatMoney(quote.total)}</strong></div>
+              <div>
+                <span>Subtotal</span>
+                <strong>{formatMoney(quote.subtotal)}</strong>
+              </div>
+              <div>
+                <span>Delivery fee</span>
+                <strong>{formatMoney(quote.deliveryFee)}</strong>
+              </div>
+              <div className="grand">
+                <span>Total</span>
+                <strong>{formatMoney(quote.total)}</strong>
+              </div>
             </div>
           ) : (
-            <div className="quote-loading">We could not get the current server total.</div>
+            <div className="quote-loading">
+              We could not get the current server total.
+            </div>
           )}
 
           <div className="checkout-address-mini">
@@ -273,8 +377,17 @@ localStorage.setItem(
           </div>
 
           <div className="checkout-actions">
-            <button className="secondary-button" onClick={() => setStep("address")}>Back</button>
-            <button className="primary-button" onClick={continueFromReview}>
+            <button
+              className="secondary-button"
+              onClick={() => setStep("address")}
+            >
+              Back
+            </button>
+
+            <button
+              className="primary-button"
+              onClick={continueFromReview}
+            >
               Continue to Payment
               <ArrowRight size={17} />
             </button>
@@ -294,22 +407,37 @@ localStorage.setItem(
 
           <div className="payment-summary">
             <p>
-              You will be redirected to Paystack to complete the payment securely.
+              You will be redirected to Paystack to complete the payment
+              securely.
             </p>
-            <div><span>Amount to pay</span><strong>{formatMoney(quote?.total)}</strong></div>
+            <div>
+              <span>Amount to pay</span>
+              <strong>{formatMoney(quote?.total)}</strong>
+            </div>
           </div>
 
           <div className="payment-note">
             <ShieldCheck size={17} />
             <span>
-              Vhitepizza verifies the transaction on the server before the order
-              moves into the kitchen workflow.
+              Vhitepizza verifies the transaction on the server before the
+              order moves into the kitchen workflow.
             </span>
           </div>
 
           <div className="checkout-actions">
-            <button className="secondary-button" disabled={submitting} onClick={() => setStep("review")}>Back</button>
-            <button className="primary-button" disabled={submitting || !quote} onClick={payNow}>
+            <button
+              className="secondary-button"
+              disabled={submitting}
+              onClick={() => setStep("review")}
+            >
+              Back
+            </button>
+
+            <button
+              className="primary-button"
+              disabled={submitting || !quote}
+              onClick={payNow}
+            >
               {submitting ? "Opening Paystack…" : "Pay with Paystack"}
               {!submitting && <ArrowRight size={17} />}
             </button>
