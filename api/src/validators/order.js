@@ -31,11 +31,17 @@ const schemas = {
   order: z.object({
     items,
     address,
-    requestedByMinutes: z.union([
-      z.literal(30),
-      z.literal(45),
-      z.literal(60),
-    ]).nullable().optional().default(null),
+    requestedByMinutes: z
+  .number()
+  .int()
+  .min(5)
+  .max(60)
+  .refine((v) => v % 5 === 0, {
+    message: "Delivery target must be in 5-minute steps.",
+  })
+  .nullable()
+  .optional()
+  .default(null),
   }),
   status: z.object({
     status: z.enum(STATUSES),

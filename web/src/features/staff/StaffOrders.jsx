@@ -31,13 +31,15 @@ export const STATUS_LABELS = {
 };
 
 const STATUS_OPTIONS = [
-  ["all", "All statuses"],
-  ["pending_approval", "Needs approval"],
-  ["confirmed", "Confirmed"],
+  ["active", "Active orders"],
+  ["history", "History"],
   ["preparing", "Preparing"],
+  ["confirmed", "Confirmed (incl. pending approval)"],
   ["ready", "Ready"],
   ["out_for_delivery", "Out for delivery"],
   ["refunds", "Refunds pending"],
+  ["delivered", "Delivered only"],
+  ["cancelled", "Cancelled only"],
 ];
 
 const SORT_OPTIONS = [
@@ -145,7 +147,7 @@ export default function StaffOrders({
   const [reasonFor, setReasonFor] = useState(null);
   const [reasonText, setReasonText] = useState("");
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("all");
+ const [status, setStatus] = useState("active");
   const [urgencyFilter, setUrgencyFilter] = useState("all");
   const [sort, setSort] = useState("newest");
   const [now, setNow] = useState(Date.now());
@@ -174,17 +176,20 @@ export default function StaffOrders({
   const filteredOrders = useMemo(() => {
     const queryText = search.trim().toLowerCase();
 
-    const result = orders.filter((order) => {
-      if (status === "refunds") {
-        if (order.payment?.status !== "refund_pending") {
-          return false;
-        }
-      } else if (
-        status !== "all" &&
-        order.status !== status
-      ) {
-        return false;
-      }
+ const result = orders.filter((order) => {
+  if (status === "refunds") {
+    if (order.payment?.status !== "refund_pending") return false;
+  } else if (status === "history") {
+    if (!["delivered", "cancelled"].includes(order.status)) return false;
+  } else if (status === "active") {
+    if (["delivered", "cancelled"].includes(order.status)) return false;
+  } else if (status === "confirmed") {
+    if (!["pending_approval", "confirmed"].includes(order.status)) {
+      return false;
+    }
+  } else if (order.status !== status) {
+    return false;
+  }
 
       if (
         urgencyFilter !== "all" &&
@@ -231,30 +236,30 @@ export default function StaffOrders({
     now,
   ]);
 
-  const counts = useMemo(
-    () => ({
-      all: orders.length,
-      pending_approval: orders.filter(
-        (o) => o.status === "pending_approval"
-      ).length,
-      confirmed: orders.filter(
-        (o) => o.status === "confirmed"
-      ).length,
-      preparing: orders.filter(
-        (o) => o.status === "preparing"
-      ).length,
-      ready: orders.filter(
-        (o) => o.status === "ready"
-      ).length,
-      out_for_delivery: orders.filter(
-        (o) => o.status === "out_for_delivery"
-      ).length,
-      refunds: orders.filter(
-        (o) => o.payment?.status === "refund_pending"
-      ).length,
-    }),
-    [orders]
+ const counts = useMemo(() => {
+  const live = orders.filter(
+    (o) => !["delivered", "cancelled"].includes(o.status)
   );
+
+  return {
+    active: live.length,
+    // Approval orders are grouped under Confirmed now.
+    confirmed: orders.filter((o) =>
+      ["pending_approval", "confirmed"].includes(o.status)
+    ).length,
+    preparing: orders.filter((o) => o.status === "preparing").length,
+    ready: orders.filter((o) => o.status === "ready").length,
+    out_for_delivery: orders.filter(
+      (o) => o.status === "out_for_delivery"
+    ).length,
+    refunds: orders.filter(
+      (o) => o.payment?.status === "refund_pending"
+    ).length,
+    history: orders.filter((o) =>
+      ["delivered", "cancelled"].includes(o.status)
+    ).length,
+  };
+}, [orders]);
 
   const run = async (order, task) => {
     setBusyId(order.id);
@@ -298,30 +303,15 @@ export default function StaffOrders({
       {error && <div className="v2-error">{error}</div>}
 
       <div className="v2-order-summary">
-        {[
-          ["Active", "all", counts.all, false],
-          [
-            "Approval",
-            "pending_approval",
-            counts.pending_approval,
-            counts.pending_approval > 0,
-          ],
-          ["Confirmed", "confirmed", counts.confirmed, false],
-          ["Preparing", "preparing", counts.preparing, false],
-          ["Ready", "ready", counts.ready, false],
-          [
-            "Delivery",
-            "out_for_delivery",
-            counts.out_for_delivery,
-            false,
-          ],
-          [
-            "Refunds",
-            "refunds",
-            counts.refunds,
-            counts.refunds > 0,
-          ],
-        ].map(([label, value, count, danger]) => (
+    {[
+  ["History", "history", counts.history, false],
+  ["Active", "active", counts.active, false],
+  ["Preparing", "preparing", counts.preparing, false],
+  ["Confirmed", "confirmed", counts.confirmed, counts.confirmed > 0],
+  ["Ready", "ready", counts.ready, false],
+  ["Delivery", "out_for_delivery", counts.out_for_delivery, false],
+  ["Refunds", "refunds", counts.refunds, counts.refunds > 0],
+].map(([label, value, count, danger]) => (
           <button
             type="button"
             key={value}
@@ -408,11 +398,10 @@ export default function StaffOrders({
         </div>
 
         <div className="v2-orders-meta">
-          <span>
-            Showing <strong>{filteredOrders.length}</strong>{" "}
-            of <strong>{orders.length}</strong> active
-            orders
-          </span>
+         <span>
+  Showing <strong>{filteredOrders.length}</strong>{" "}
+  of <strong>{orders.length}</strong> total orders
+</span>
 
           <span className="v2-live-indicator">
             <i /> Live

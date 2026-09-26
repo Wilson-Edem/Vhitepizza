@@ -55,30 +55,19 @@ const isLarge = (total, itemCount, settings) =>
   (settings.largeTotal > 0 && total >= settings.largeTotal) ||
   (settings.largeItems > 0 && itemCount >= settings.largeItems);
 
-function allowedDeliveryTargets(itemCount, settings) {
-  const large = isLarge(0, itemCount, {
-    ...settings,
-    largeTotal: 0,
-  });
-
-  if (large) return [60];
-  if (itemCount <= 2) return [30, 45];
-  return [45, 60];
-}
-
-function resolveRequestedTarget(requestedByMinutes, itemCount, settings) {
+function resolveRequestedTarget(requestedByMinutes) {
   if (requestedByMinutes == null) return null;
 
-  const allowed = allowedDeliveryTargets(itemCount, settings);
+  const n = Number(requestedByMinutes);
 
-  if (!allowed.includes(Number(requestedByMinutes))) {
+  if (!Number.isInteger(n) || n < 5 || n > 60 || n % 5 !== 0) {
     throw new HttpError(
       400,
-      `Choose a delivery target available for an order of this size: ${allowed.join(" or ")} minutes.`
+      "Choose a delivery target between 5 and 60 minutes, in 5-minute steps."
     );
   }
 
-  return Number(requestedByMinutes);
+  return n;
 }
 
 async function createOrder({ user, items, address, requestedByMinutes = null }) {
@@ -106,11 +95,7 @@ async function createOrder({ user, items, address, requestedByMinutes = null }) 
   );
 
   const requiresApproval = isLarge(priced.total, itemCount, settings);
-  const requestedMinutes = resolveRequestedTarget(
-    requestedByMinutes,
-    itemCount,
-    settings
-  );
+  const requestedMinutes = resolveRequestedTarget(requestedByMinutes);
 
   const profile =
     (await db.collection("users").doc(user.uid).get()).data() || {};

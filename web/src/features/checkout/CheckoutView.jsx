@@ -23,22 +23,7 @@ const toOrderItem = (item) => ({
   removedToppingIds: item.removedToppingIds || [],
 });
 
-const getDeliveryTargets = (cart) => {
-  const itemCount = cart.reduce(
-    (sum, item) => sum + Number(item.quantity || 0),
-    0
-  );
-
-  if (itemCount <= 2) {
-    return [30, 45];
-  }
-
-  if (itemCount <= 5) {
-    return [45, 60];
-  }
-
-  return [60];
-};
+const ALL_TARGETS = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60];
 
 const STEPS = [
   ["address", "Address"],
@@ -62,19 +47,7 @@ export default function CheckoutView({
   const [requestedByMinutes, setRequestedByMinutes] = useState(null);
 
   const cartItems = useMemo(() => cart.map(toOrderItem), [cart]);
-  const deliveryTargets = useMemo(
-    () => getDeliveryTargets(cart),
-    [cart]
-  );
 
-  useEffect(() => {
-    if (
-      requestedByMinutes !== null &&
-      !deliveryTargets.includes(requestedByMinutes)
-    ) {
-      setRequestedByMinutes(null);
-    }
-  }, [deliveryTargets, requestedByMinutes]);
 
   useEffect(() => {
     let active = true;
@@ -309,41 +282,33 @@ export default function CheckoutView({
             ))}
           </div>
 
-          <div className="delivery-target-card">
-            <div>
-              <span>DELIVERY TIME TARGET</span>
-              <h3>When would you like it?</h3>
-              <p>
-                This is a soft target for the restaurant team, not a
-                guaranteed SLA.
-              </p>
-            </div>
+       <div className="delivery-target-card">
+  <div>
+    <span>DELIVERY TIME TARGET</span>
+    <h3>When would you like it?</h3>
+    <p>
+      This is a soft target for the restaurant team, not a
+      guaranteed SLA.
+    </p>
+  </div>
 
-            <div className="delivery-target-options">
-              <button
-                type="button"
-                className={requestedByMinutes === null ? "selected" : ""}
-                onClick={() => setRequestedByMinutes(null)}
-              >
-                <strong>No preference</strong>
-                <small>Let the kitchen prioritize it</small>
-              </button>
-
-              {deliveryTargets.map((minutes) => (
-                <button
-                  type="button"
-                  key={minutes}
-                  className={
-                    requestedByMinutes === minutes ? "selected" : ""
-                  }
-                  onClick={() => setRequestedByMinutes(minutes)}
-                >
-                  <strong>Within {minutes} min</strong>
-                  <small>Target only</small>
-                </button>
-              ))}
-            </div>
-          </div>
+  <select
+    className="delivery-target-select"
+    value={requestedByMinutes ?? ""}
+    onChange={(event) =>
+      setRequestedByMinutes(
+        event.target.value ? Number(event.target.value) : null
+      )
+    }
+  >
+    <option value="">No preference — let the kitchen prioritize it</option>
+    {ALL_TARGETS.map((minutes) => (
+      <option key={minutes} value={minutes}>
+        Within {minutes} minutes
+      </option>
+    ))}
+  </select>
+</div>
 
           {loadingQuote ? (
             <div className="quote-loading">

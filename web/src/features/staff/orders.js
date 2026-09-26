@@ -8,6 +8,7 @@ const ACTIVE = [
   "preparing",
   "ready",
   "out_for_delivery",
+  "delivered",
   "cancelled",
 ];
 

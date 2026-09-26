@@ -236,7 +236,7 @@ function App() {
   const [error, setError] = useState("");
 
  const [screen, setScreen] = useState(screenFromPath());
-  const [checkoutAddress, setCheckoutAddress] = useState(null);
+  const [checkoutAddress, setCheckoutAddress] = useState(getStoredAddress);
   const [deliveryFee, setDeliveryFee] = useState(0);
   const [openOrderId, setOpenOrderId] = useState(null);
   const [authReturn, setAuthReturn] = useState("profile");
