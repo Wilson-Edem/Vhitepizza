@@ -272,7 +272,7 @@ router.post("/:id/refund", requireRole("admin"), async (req, res) => {
 router.post("/:id/refund-done", requireRole("admin"), async (req, res) => {
   res.json({
     success: true,
-    data: await initiateRefund(req.params.id, req.user.uid),
+    data: await markRefundDone(req.params.id),
   });
 });
 
