@@ -12,14 +12,15 @@ const menuRoutes = require("./routes/menu");
 const userRoutes = require("./routes/users");
 const quoteRoutes = require("./routes/quote");
 const orderRoutes = require("./routes/orders");
+const notificationRoutes = require("./routes/notifications");
 const paymentWebhookRoutes = require("./routes/paymentWebhook");
 const adminRoutes = require("./routes/admin");
 const { verifyToken } = require("./middleware/auth");
 const { startJobs } = require("./jobs/orders");
+const { startPushJobs } = require("./jobs/push");
 
 const app = express();
 app.set("trust proxy", 1);
-app.use(cors());
 const PORT = process.env.PORT || 5000;
 
 app.use(helmet());
@@ -62,6 +63,7 @@ app.use("/api/v1/menu", menuRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/quote", quoteRoutes);
 app.use("/api/v1/orders", orderRoutes);
+app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/payments", paymentWebhookRoutes);
 app.use("/api/v1/admin", verifyToken, adminRoutes);
 
@@ -86,4 +88,5 @@ app.use((err, req, res, next) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Vhitepizza API running on port ${PORT}`);
   startJobs();
+  startPushJobs();
 });
