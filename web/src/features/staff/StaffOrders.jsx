@@ -312,7 +312,19 @@ function StaffOrderRow({ order, role, uid, busy, onOpen, onAdvance, onApprove, o
 {(role === "kitchen" || role === "admin") && order.status === "preparing" && <button className="v2-primary-action" disabled={busy} onClick={() => onAdvance("ready")}>Mark Ready</button>}
 
 {(role === "rider" || role === "admin") && order.status === "ready" && !order.riderId && <button className="v2-primary-action" disabled={busy} onClick={onClaim}>Claim Delivery</button>}
-{(role === "rider" || role === "admin") && order.status === "ready" && (isMine || role === "admin") && <button className="v2-active-action" disabled={busy} onClick={() => onAdvance("out_for_delivery")}>Start Delivery</button>}
+{role === "rider" && order.status === "ready" && isMine && (
+  <button
+    className="v2-active-action"
+    disabled={busy}
+    onClick={async () => {
+      await onAdvance("out_for_delivery");
+      onOpen?.();
+    }}
+  >
+    Start Delivery
+  </button>
+)}
+
 {(role === "rider" || role === "admin") && order.status === "out_for_delivery" && (isMine || role === "admin") && <button className="v2-primary-action" disabled={busy} onClick={() => onAdvance("delivered")}>Mark Delivered</button>}
 
         {(role === "kitchen" || (role === "rider" && isMine)) && !["delivered", "cancelled"].includes(order.status) && <button className="v2-problem-action" disabled={busy} onClick={onProblem}>Flag Problem</button>}

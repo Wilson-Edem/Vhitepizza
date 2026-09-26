@@ -74,11 +74,16 @@ export default function OrdersView({ user, onToast, onSignIn, initialOrderId, on
 
   // Keep an active order fresh so the customer sees the rider location that
   // the rider publishes from the active-delivery screen.
-  useEffect(() => {
-    if (!selectedId) return undefined;
-    const timer = setInterval(() => loadDetail(selectedId), 15000);
-    return () => clearInterval(timer);
-  }, [selectedId, loadDetail]);
+ useEffect(() => {
+  if (!selectedId) return undefined;
+
+  // Poll faster while an order is actively out for delivery, so the
+  // customer sees the rider's live position quickly.
+  const interval = selected?.status === "out_for_delivery" ? 4000 : 15000;
+  const timer = setInterval(() => loadDetail(selectedId), interval);
+
+  return () => clearInterval(timer);
+}, [selectedId, loadDetail, selected?.status]);
 
   const cancelOrder = async () => {
     if (!selected) return;

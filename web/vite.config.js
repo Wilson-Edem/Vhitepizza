@@ -4,8 +4,7 @@ import { defineConfig } from 'vite';
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  server: {
-  host: true,
+  server: { host: true,
   hmr: {
     host: "192.168.0.188",
   },
